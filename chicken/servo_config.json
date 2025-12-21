@@ -1,0 +1,22 @@
+{
+  "servos": {
+    "base": {
+      "pin": 0,
+      "inverted": false
+    },
+    "shoulder": {
+      "pin": 1,
+      "inverted": true,
+      "description": "Shoulder (up/down)"
+    },
+    "elbow": {
+      "pin": 2,
+      "inverted": false,
+      "description": "Elbow (forward/backward)"
+    },
+    "gripper": {
+      "pin": 3,
+      "inverted": false
+    }
+  }
+}
