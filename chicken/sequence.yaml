@@ -1,0 +1,226 @@
+# Robot Arm Chicken Pickup Sequence
+# Format: [base, shoulder, elbow, gripper] in degrees
+# Base: 90 = center
+# Shoulder: 90 = level, 175 = down
+# Elbow: 90 = straight, 80 = bent forward
+# Gripper: 40 = closed, 90 = neutral, 120 = open
+
+sequence:
+  stage_00_emergency_stop:
+    description: "Red button - reset to safe position"
+    command: "python chicken/main.py 00"
+    actual_behavior:
+      - step: "SERVO_HEADER calls home()"
+        action: "SNAP"
+        from: "unknown"
+        to: [90, 90, 90, 90]
+        notes: "Violent snap to home before override kicks in"
+
+      - step: "Override home() to do nothing"
+        action: "no-op"
+        notes: "Too late, home() already ran"
+
+      - step: "Smooth move to safe position"
+        action: "SMOOTH"
+        from: [90, 90, 90, 90]
+        to: [90, 90, 90, 90]
+        notes: "No actual movement since already at target"
+
+    final_position: [90, 90, 90, 90]
+    expected_position: [90, 90, 90, 90]
+    position_match: true
+
+  stage_01_lower_for_placement:
+    description: "Lower arm and open gripper for object placement"
+    command: "python chicken/main.py 01"
+    assumes_starting_from: [90, 90, 90, 90]
+    actual_behavior:
+      - step: "SERVO_HEADER calls home()"
+        action: "SNAP"
+        from: [90, 90, 90, 90]
+        to: [90, 90, 90, 90]
+        notes: "Snap even though already there - still jerks"
+
+      - step: "Override home() to do nothing"
+        action: "no-op"
+        notes: "Too late, home() already ran"
+
+      - step: "Smooth lower to ground"
+        action: "SMOOTH"
+        from: [90, 90, 90, 90]
+        to: [90, 175, 80, 120]
+        duration: "250 steps × 0.05s × 0.5 speed = 6.25s"
+        notes: "Shoulder drops, elbow extends, gripper opens"
+
+    final_position: [90, 175, 80, 120]
+    expected_position: [90, 175, 80, 120]
+    position_match: true
+
+  stage_02_return_to_baseline:
+    description: "Return arm to baseline position"
+    command: "python chicken/main.py 02"
+    assumes_starting_from: [90, 175, 80, 120]
+    actual_behavior:
+      - step: "SERVO_HEADER calls home()"
+        action: "SNAP"
+        from: [90, 175, 80, 120]
+        to: [90, 90, 90, 90]
+        notes: "VIOLENT SNAP - huge position change! Shoulder 175→90, elbow 80→90, gripper 120→90"
+
+      - step: "Override home() to do nothing"
+        action: "no-op"
+        notes: "Too late, home() already ran"
+
+      - step: "Smooth move to baseline"
+        action: "SMOOTH"
+        from: [90, 175, 80, 120]
+        to: [90, 90, 90, 120]
+        notes: "CODE assumes [90, 175, 80, 120] but ROBOT is at [90, 90, 90, 90] after snap!"
+        actual_from: [90, 90, 90, 90]
+        mismatch: true
+
+    final_position: [90, 90, 90, 120]
+    expected_position: [90, 90, 90, 120]
+    position_match: true
+    issues:
+      - "home() snap causes violent jerk"
+      - "Robot position doesn't match code assumption"
+
+  stage_03_pick_chicken:
+    description: "Pick up the chicken"
+    command: "python chicken/main.py 03"
+    assumes_starting_from: [90, 90, 90, 120]
+    actual_behavior:
+      - step: "CUSTOM_HEADER initialization"
+        action: "NONE"
+        from: [90, 90, 90, 120]
+        to: [90, 90, 90, 120]
+        notes: "No home() call - servos stay where they are"
+
+      - step: "Override home() to do nothing"
+        action: "no-op"
+        notes: "Preventative measure"
+
+      - step: "Phase 1 - Lower to chicken"
+        action: "SMOOTH"
+        from: [90, 90, 90, 120]
+        to: [90, 175, 80, 120]
+        duration: "250 steps × 0.05s × 0.5 speed = 6.25s"
+
+      - step: "Phase 2 - Close gripper"
+        action: "SMOOTH"
+        from: [90, 175, 80, 120]
+        to: [90, 175, 80, 40]
+        duration: "100 steps × 0.04s × 0.5 speed = 2s"
+        notes: "Gripper closes around object"
+
+      - step: "Phase 3 - Lift chicken"
+        action: "SMOOTH"
+        from: [90, 175, 80, 40]
+        to: [90, 90, 90, 40]
+        duration: "250 steps × 0.05s × 0.5 speed = 6.25s"
+
+    final_position: [90, 90, 90, 40]
+    expected_position: [90, 90, 90, 40]
+    position_match: true
+
+  stage_04_drop_chicken:
+    description: "Open gripper and drop chicken"
+    command: "python chicken/main.py 04"
+    assumes_starting_from: [90, 90, 90, 40]
+    actual_behavior:
+      - step: "SERVO_HEADER calls home()"
+        action: "SNAP"
+        from: [90, 90, 90, 40]
+        to: [90, 90, 90, 90]
+        notes: "Snap only affects gripper (40→90), drops chicken uncontrollably"
+
+      - step: "Override home() to do nothing"
+        action: "no-op"
+        notes: "Too late, home() already ran"
+
+      - step: "Open gripper smoothly"
+        action: "SMOOTH"
+        from: [90, 90, 90, 40]
+        to: [90, 90, 90, 120]
+        notes: "CODE assumes gripper at 40° but ROBOT is at 90° after snap!"
+        actual_from: [90, 90, 90, 90]
+        mismatch: true
+
+    final_position: [90, 90, 90, 120]
+    expected_position: [90, 90, 90, 120]
+    position_match: true
+    issues:
+      - "home() snap causes gripper to open immediately"
+      - "Chicken drops during snap, not during smooth motion"
+
+problems:
+  root_cause: "SERVO_HEADER calls home() at line 118 BEFORE user code can override it"
+
+  affected_stages:
+    - stage: "01"
+      severity: "minor"
+      description: "Snap from 90,90,90,90 to 90,90,90,90 - jerks even though no movement"
+
+    - stage: "02"
+      severity: "SEVERE"
+      description: "Snap from 90,175,80,120 to 90,90,90,90 - massive position change causes violent jerk"
+
+    - stage: "03"
+      severity: "none"
+      description: "Uses CUSTOM_HEADER - no snap"
+
+    - stage: "04"
+      severity: "moderate"
+      description: "Snap from 90,90,90,40 to 90,90,90,90 - drops chicken uncontrollably"
+
+  solution: "Replace SERVO_HEADER with CUSTOM_HEADER (no home() call) in all stages"
+
+ideal_sequence:
+  description: "What the sequence SHOULD be (no snaps)"
+
+  stage_00:
+    from: "unknown"
+    to: [90, 90, 90, 90]
+    motion: "smooth"
+
+  stage_01:
+    from: [90, 90, 90, 90]
+    to: [90, 175, 80, 120]
+    motion: "smooth"
+    notes: "Lower arm for placement"
+
+  stage_02:
+    from: [90, 175, 80, 120]
+    to: [90, 90, 90, 120]
+    motion: "smooth"
+    notes: "Return to baseline"
+
+  stage_03:
+    from: [90, 90, 90, 120]
+    to: [90, 175, 80, 120]
+    motion: "smooth"
+    notes: "Lower to chicken"
+
+    then:
+      from: [90, 175, 80, 120]
+      to: [90, 175, 80, 40]
+      motion: "smooth"
+      notes: "Close gripper"
+
+    then:
+      from: [90, 175, 80, 40]
+      to: [90, 90, 90, 40]
+      motion: "smooth"
+      notes: "Lift chicken"
+
+  stage_04:
+    from: [90, 90, 90, 40]
+    to: [90, 90, 90, 120]
+    motion: "smooth"
+    notes: "Open gripper"
+
+speed_config:
+  SPEED_MULTIPLIER: 0.5
+  effect: "FASTER (fewer steps, shorter delays)"
+  note: "Higher = slower, lower = faster"

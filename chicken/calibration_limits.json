@@ -1,0 +1,22 @@
+{
+  "base": {
+    "min": 180,
+    "max": 0,
+    "default": 63
+  },
+  "shoulder": {
+    "min": 1,
+    "max": 121,
+    "default": 60
+  },
+  "elbow": {
+    "min": 152,
+    "max": 0,
+    "default": 100
+  },
+  "gripper": {
+    "min": 80,
+    "max": 180,
+    "default": 90
+  }
+}

@@ -1,0 +1,56 @@
+# Robot Arm Motion Sequence
+# Format: [base, shoulder, elbow, gripper] in degrees (0-180)
+
+stages:
+  "00":
+    name: "emergency_stop"
+    description: "Reset to safe position from anywhere"
+    assume_starting_from: null
+    waypoints:
+      - position: [90, 90, 90, 90]
+        duration: 3.0
+        description: "Safe home position"
+
+  "01":
+    name: "lower_for_placement"
+    description: "Lower arm to ground for object placement"
+    assume_starting_from: [90, 90, 90, 90]
+    waypoints:
+      - position: [90, 175, 80, 120]
+        duration: 6.25
+        description: "Lower to ground, gripper open"
+
+  "02":
+    name: "return_to_baseline"
+    description: "Return to ready position"
+    assume_starting_from: [90, 175, 80, 120]
+    waypoints:
+      - position: [90, 90, 90, 120]
+        duration: 6.25
+        description: "Home position, gripper open"
+
+  "03":
+    name: "pickup"
+    description: "Pick up object from ground"
+    assume_starting_from: [90, 90, 90, 120]
+    waypoints:
+      - position: [90, 175, 80, 120]
+        duration: 6.25
+        description: "Lower to object"
+
+      - position: [90, 175, 80, 40]
+        duration: 2.0
+        description: "Close gripper around object"
+
+      - position: [90, 90, 90, 40]
+        duration: 6.25
+        description: "Lift object to home"
+
+  "04":
+    name: "drop"
+    description: "Release object"
+    assume_starting_from: [90, 90, 90, 40]
+    waypoints:
+      - position: [90, 90, 90, 120]
+        duration: 1.6
+        description: "Open gripper"

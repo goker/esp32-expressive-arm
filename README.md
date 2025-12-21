@@ -173,27 +173,56 @@ python3 run_all.py
 
 ## Chicken Pickup Demo (Advanced)
 
-A precision object pickup demo with calibration and smooth motion control.
+A precision object pickup demo with YAML-based motion sequences and web-based calibration.
+
+### Web-Based Calibrator (NEW!)
+
+Interactive web tool to calibrate servo limits and test positions:
 
 ```bash
 cd chicken
-
-# First time only: calibrate
-python __calibrator_simple.py
-
-# Run the pickup sequence
-python main.py 01    # Lower arm
-# <-- Place object here
-python main.py 02    # Return to baseline
-python main.py 03    # Pick up object
-python main.py 04    # Drop object
+python calibrator_web.py
 ```
 
+Then open: **http://localhost:3001**
+
 **Features:**
-- Servo calibration system (handles inverted servos)
-- Global speed control (`SPEED_MULTIPLIER` in `servo_utils.py`)
-- Minimum jerk trajectory for smooth motion
-- Emergency stop function
+- 🎮 **Live servo control** with coarse/fine adjustment buttons
+- 📊 **4-panel visualization** showing each servo's position
+- 🎯 **Min/Default/Max calibration** for safe operation
+- 🛑 **Emergency stop** button (smooth 3-second return to defaults)
+- 💾 **Save calibration** to `calibration_limits.json`
+- ⚡ **Debounced updates** - no jerky movements or gripper pinching
+
+### Test Your Calibration
+
+```bash
+# Quick test - move all servos to home position
+python test_calibration.py home
+
+# Full test - each servo through min→default→max
+python test_calibration.py test
+```
+
+### Run Pickup Sequence
+
+YAML-driven motion sequences (edit `correct_sequence.yaml`):
+
+```bash
+python main.py 01    # Lower arm for placement
+# <-- Place object here
+python main.py 02    # Return to baseline
+python main.py 03    # Pick up object (3 waypoints)
+python main.py 04    # Drop object
+python main.py 00    # Emergency stop
+```
+
+**Architecture:**
+- ✅ YAML-based motion sequences (`correct_sequence.yaml`)
+- ✅ Separate MicroPython template (`micropython_runner.py`)
+- ✅ Clean separation: config vs code vs orchestration
+- ✅ Servo calibration with min/max/default limits
+- ✅ Smooth minimum-jerk trajectories
 
 **[→ Complete Chicken Demo Documentation](chicken/README.md)**
 

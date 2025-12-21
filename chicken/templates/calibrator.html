@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robot Arm Calibrator</title>
+    <style>
+        body {
+            font-family: 'Monaco', monospace;
+            margin: 0;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 20px;
+        }
+
+        .controls {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        .canvas-container {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #61dafb;
+        }
+
+        .servo-control {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #444;
+        }
+
+        .servo-control:last-child {
+            border-bottom: none;
+        }
+
+        .servo-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #61dafb;
+        }
+
+        .value-display {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #444;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #61dafb;
+            cursor: pointer;
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .control-buttons button {
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        .limit-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #4a4a4a;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+        }
+
+        button:hover {
+            background: #5a5a5a;
+        }
+
+        button:active {
+            background: #3a3a3a;
+        }
+
+        button.save {
+            background: #28a745;
+        }
+
+        button.save:hover {
+            background: #218838;
+        }
+
+        .limit-display {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .save-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #444;
+        }
+
+        canvas {
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: #1a1a1a;
+        }
+
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border-radius: 4px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .status.error {
+            background: #dc3545;
+        }
+
+        .control-label {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .emergency-stop {
+            background: #dc3545 !important;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 3px solid #c82333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .emergency-stop:hover {
+            background: #c82333 !important;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+        }
+
+        .emergency-stop:active {
+            background: #bd2130 !important;
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="status" id="status"></div>
+
+    <div class="container">
+        <div class="controls">
+            <h1>🤖 Robot Calibrator</h1>
+
+            <button class="emergency-stop" onclick="emergencyStop()">🛑 EMERGENCY STOP</button>
+
+            <!-- Base -->
+            <div class="servo-control">
+                <div class="servo-name">0: Base (Rotation)</div>
+                <div class="value-display" id="value-0">90°</div>
+                <div class="control-label">Coarse / Fine:</div>
+                <div class="control-buttons">
+                    <button onclick="adjustServo(0, -10)">-10</button>
+                    <button onclick="adjustServo(0, -1)">-1</button>
+                    <button onclick="adjustServo(0, 1)">+1</button>
+                    <button onclick="adjustServo(0, 10)">+10</button>
+                </div>
+                <input type="range" min="0" max="180" value="90" id="servo-0" oninput="updateServo(0, this.value)">
+                <div class="limit-buttons">
+                    <button onclick="saveLimit(0, 'min')">Save Min</button>
+                    <button onclick="saveLimit(0, 'default')">Save Default</button>
+                    <button onclick="saveLimit(0, 'max')">Save Max</button>
+                </div>
+                <div class="limit-display" id="limits-0">Min: 0° | Default: 90° | Max: 180°</div>
+            </div>
+
+            <!-- Shoulder -->
+            <div class="servo-control">
+                <div class="servo-name">1: Shoulder (Up/Down)</div>
+                <div class="value-display" id="value-1">90°</div>
+                <div class="control-label">Coarse / Fine:</div>
+                <div class="control-buttons">
+                    <button onclick="adjustServo(1, -10)">-10</button>
+                    <button onclick="adjustServo(1, -1)">-1</button>
+                    <button onclick="adjustServo(1, 1)">+1</button>
+                    <button onclick="adjustServo(1, 10)">+10</button>
+                </div>
+                <input type="range" min="0" max="180" value="90" id="servo-1" oninput="updateServo(1, this.value)">
+                <div class="limit-buttons">
+                    <button onclick="saveLimit(1, 'min')">Save Min</button>
+                    <button onclick="saveLimit(1, 'default')">Save Default</button>
+                    <button onclick="saveLimit(1, 'max')">Save Max</button>
+                </div>
+                <div class="limit-display" id="limits-1">Min: 0° | Default: 90° | Max: 180°</div>
+            </div>
+
+            <!-- Elbow -->
+            <div class="servo-control">
+                <div class="servo-name">2: Elbow (Bend)</div>
+                <div class="value-display" id="value-2">90°</div>
+                <div class="control-label">Coarse / Fine:</div>
+                <div class="control-buttons">
+                    <button onclick="adjustServo(2, -10)">-10</button>
+                    <button onclick="adjustServo(2, -1)">-1</button>
+                    <button onclick="adjustServo(2, 1)">+1</button>
+                    <button onclick="adjustServo(2, 10)">+10</button>
+                </div>
+                <input type="range" min="0" max="180" value="90" id="servo-2" oninput="updateServo(2, this.value)">
+                <div class="limit-buttons">
+                    <button onclick="saveLimit(2, 'min')">Save Min</button>
+                    <button onclick="saveLimit(2, 'default')">Save Default</button>
+                    <button onclick="saveLimit(2, 'max')">Save Max</button>
+                </div>
+                <div class="limit-display" id="limits-2">Min: 0° | Default: 90° | Max: 180°</div>
+            </div>
+
+            <!-- Gripper -->
+            <div class="servo-control">
+                <div class="servo-name">3: Gripper (Open/Close)</div>
+                <div class="value-display" id="value-3">90°</div>
+                <div class="control-label">Coarse / Fine:</div>
+                <div class="control-buttons">
+                    <button onclick="adjustServo(3, -10)">-10</button>
+                    <button onclick="adjustServo(3, -1)">-1</button>
+                    <button onclick="adjustServo(3, 1)">+1</button>
+                    <button onclick="adjustServo(3, 10)">+10</button>
+                </div>
+                <input type="range" min="0" max="180" value="90" id="servo-3" oninput="updateServo(3, this.value)">
+                <div class="limit-buttons">
+                    <button onclick="saveLimit(3, 'min')">Save Min</button>
+                    <button onclick="saveLimit(3, 'default')">Save Default</button>
+                    <button onclick="saveLimit(3, 'max')">Save Max</button>
+                </div>
+                <div class="limit-display" id="limits-3">Min: 0° | Default: 90° | Max: 180°</div>
+            </div>
+
+            <div class="save-section">
+                <button class="save" onclick="saveCalibration()">💾 Save Calibration to File</button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%;">
+                <canvas id="canvas0" width="380" height="320" style="border: 2px solid #444; border-radius: 8px; background: #1a1a1a;"></canvas>
+                <canvas id="canvas1" width="380" height="320" style="border: 2px solid #444; border-radius: 8px; background: #1a1a1a;"></canvas>
+                <canvas id="canvas2" width="380" height="320" style="border: 2px solid #444; border-radius: 8px; background: #1a1a1a;"></canvas>
+                <canvas id="canvas3" width="380" height="320" style="border: 2px solid #444; border-radius: 8px; background: #1a1a1a;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvases = [
+            document.getElementById('canvas0'),
+            document.getElementById('canvas1'),
+            document.getElementById('canvas2'),
+            document.getElementById('canvas3')
+        ];
+        const contexts = canvases.map(c => c.getContext('2d'));
+
+        let positions = [90, 90, 90, 90];
+        let calibratedPositions = [90, 90, 90, 90]; // Solid line positions
+        let calibration = {};
+        let updateTimeout = null; // For debouncing servo commands
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = isError ? 'status error' : 'status';
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 2000);
+        }
+
+        function emergencyStop() {
+            if (confirm('⚠️ EMERGENCY STOP - Smoothly move all servos to default positions?')) {
+                showStatus('Moving to safe position...');
+
+                // Get default positions from calibration
+                const names = ['base', 'shoulder', 'elbow', 'gripper'];
+                const targets = names.map((name, i) => {
+                    return calibration[name] ? calibration[name].default : 90;
+                });
+
+                // Smooth interpolation over 3 seconds
+                const startPositions = [...positions];
+                const duration = 3000; // 3 seconds
+                const steps = 60;
+                const stepDelay = duration / steps;
+                let currentStep = 0;
+
+                const interval = setInterval(() => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+
+                    // Smooth easing (ease-in-out)
+                    const t = progress < 0.5
+                        ? 2 * progress * progress
+                        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                    // Update positions and UI
+                    for (let i = 0; i < 4; i++) {
+                        const angle = Math.round(startPositions[i] + (targets[i] - startPositions[i]) * t);
+                        positions[i] = angle;
+                        document.getElementById(`servo-${i}`).value = angle;
+                        document.getElementById(`value-${i}`).textContent = `${angle}°`;
+                    }
+
+                    // Send command to move all servos
+                    fetch('/move_all', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({positions})
+                    });
+
+                    drawAll();
+
+                    if (currentStep >= steps) {
+                        clearInterval(interval);
+                        showStatus('✓ Safe position reached');
+                    }
+                }, stepDelay);
+            }
+        }
+
+        function adjustServo(servo, delta) {
+            let newAngle = positions[servo] + delta;
+            newAngle = Math.max(0, Math.min(180, newAngle));
+            document.getElementById(`servo-${servo}`).value = newAngle;
+            updateServo(servo, newAngle);
+        }
+
+        function updateServo(servo, angle) {
+            positions[servo] = parseInt(angle);
+            document.getElementById(`value-${servo}`).textContent = `${angle}°`;
+
+            // Update visualization immediately
+            drawServo(servo);
+
+            // Debounce servo commands to prevent jerky movement
+            if (updateTimeout) {
+                clearTimeout(updateTimeout);
+            }
+
+            updateTimeout = setTimeout(() => {
+                fetch('/move', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({servo, angle: parseInt(angle)})
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) {
+                        showStatus('Failed to move servo', true);
+                    }
+                })
+                .catch(err => {
+                    console.error('Connection error:', err);
+                });
+            }, 100); // Wait 100ms after slider stops moving
+        }
+
+        function saveLimit(servo, type) {
+            // Update calibrated position to current position (move solid line to dashed)
+            calibratedPositions[servo] = positions[servo];
+
+            console.log(`Saving limit: servo=${servo}, type=${type}, position=${positions[servo]}`);
+
+            fetch('/save_limit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({servo: servo, type: type})
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log('Save limit response:', data);
+                if (data.success) {
+                    calibration = data.calibration;
+                    updateLimitDisplays();
+                    showStatus(`✓ Saved ${type}: ${positions[servo]}° for servo ${servo}`);
+                    drawServo(servo);
+                } else {
+                    showStatus(`Failed to save limit: ${data.error || 'Unknown error'}`, true);
+                }
+            })
+            .catch(err => {
+                console.error('Save limit error:', err);
+                showStatus(`Error saving limit: ${err.message}`, true);
+            });
+        }
+
+        function saveCalibration() {
+            fetch('/save_calibration', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus('✓ Calibration saved!');
+                } else {
+                    showStatus('Failed to save calibration', true);
+                }
+            });
+        }
+
+        function updateLimitDisplays() {
+            const names = ['base', 'shoulder', 'elbow', 'gripper'];
+            names.forEach((name, i) => {
+                const cal = calibration[name];
+                if (cal) {
+                    document.getElementById(`limits-${i}`).textContent =
+                        `Min: ${cal.min}° | Default: ${cal.default}° | Max: ${cal.max}°`;
+                }
+            });
+        }
+
+        function drawServo(index) {
+            const ctx = contexts[index];
+            const canvas = canvases[index];
+            const w = canvas.width;
+            const h = canvas.height;
+            const centerX = w / 2;
+            const centerY = h / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Title
+            const titles = ['Base (Rotation)', 'Shoulder', 'Elbow', 'Gripper'];
+            ctx.fillStyle = '#61dafb';
+            ctx.font = 'bold 16px Monaco';
+            ctx.fillText(titles[index], 10, 25);
+
+            // Current angle
+            ctx.fillStyle = '#ffd700';
+            ctx.font = '14px Monaco';
+            ctx.fillText(`Current: ${positions[index]}°`, 10, 50);
+            ctx.fillStyle = '#888';
+            ctx.fillText(`Calibrated: ${calibratedPositions[index]}°`, 10, 70);
+
+            // Convert angles to radians
+            const currentRad = (positions[index] - 90) * Math.PI / 180;
+            const calibratedRad = (calibratedPositions[index] - 90) * Math.PI / 180;
+
+            if (index === 0) {
+                // Base - top down view circle
+                // Center circle
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY + 20, 60, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Calibrated angle (SOLID line)
+                ctx.strokeStyle = '#61dafb';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY + 20);
+                ctx.lineTo(centerX + Math.cos(calibratedRad) * 60,
+                          centerY + 20 + Math.sin(calibratedRad) * 60);
+                ctx.stroke();
+
+                // Current angle (DASHED line)
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY + 20);
+                ctx.lineTo(centerX + Math.cos(currentRad) * 60,
+                          centerY + 20 + Math.sin(currentRad) * 60);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+            } else if (index === 1 || index === 2) {
+                // Shoulder/Elbow - side view
+                const armLength = 100;
+
+                // Base point
+                ctx.fillStyle = '#444';
+                ctx.beginPath();
+                ctx.arc(centerX - 50, centerY + 20, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Calibrated arm (SOLID)
+                ctx.strokeStyle = '#61dafb';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(centerX - 50, centerY + 20);
+                ctx.lineTo(centerX - 50 + Math.cos(calibratedRad) * armLength,
+                          centerY + 20 + Math.sin(calibratedRad) * armLength);
+                ctx.stroke();
+
+                // Current arm (DASHED)
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(centerX - 50, centerY + 20);
+                ctx.lineTo(centerX - 50 + Math.cos(currentRad) * armLength,
+                          centerY + 20 + Math.sin(currentRad) * armLength);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+            } else if (index === 3) {
+                // Gripper - jaw angle
+                const jawLength = 60;
+                const baseY = centerY + 20;
+
+                // Center pivot
+                ctx.fillStyle = '#444';
+                ctx.beginPath();
+                ctx.arc(centerX, baseY, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Calibrated jaws (SOLID)
+                ctx.strokeStyle = '#61dafb';
+                ctx.lineWidth = 4;
+                // Top jaw
+                ctx.beginPath();
+                ctx.moveTo(centerX, baseY);
+                ctx.lineTo(centerX + jawLength, baseY - Math.abs(calibratedRad) * 80);
+                ctx.stroke();
+                // Bottom jaw
+                ctx.beginPath();
+                ctx.moveTo(centerX, baseY);
+                ctx.lineTo(centerX + jawLength, baseY + Math.abs(calibratedRad) * 80);
+                ctx.stroke();
+
+                // Current jaws (DASHED)
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                // Top jaw
+                ctx.beginPath();
+                ctx.moveTo(centerX, baseY);
+                ctx.lineTo(centerX + jawLength, baseY - Math.abs(currentRad) * 80);
+                ctx.stroke();
+                // Bottom jaw
+                ctx.beginPath();
+                ctx.moveTo(centerX, baseY);
+                ctx.lineTo(centerX + jawLength, baseY + Math.abs(currentRad) * 80);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        function drawAll() {
+            for (let i = 0; i < 4; i++) {
+                drawServo(i);
+            }
+        }
+
+        // Initial draw
+        drawAll();
+
+        // Fetch calibration data on load
+        fetch('/get_positions')
+            .then(r => r.json())
+            .then(data => {
+                calibration = data.calibration;
+                updateLimitDisplays();
+            })
+            .catch(err => {
+                console.error('Failed to load calibration:', err);
+            });
+    </script>
+</body>
+</html>
