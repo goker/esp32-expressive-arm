@@ -1,5 +1,7 @@
 # Robot Arm Motion Sequence
-# Format: [base, shoulder, elbow, gripper] in degrees (0-180)
+# Format: [base, shoulder, elbow, gripper]
+# Use 'default', 'min', 'max' keywords or specific angles
+# Keywords will be replaced with values from calibration_limits.json
 
 stages:
   "00":
@@ -7,50 +9,50 @@ stages:
     description: "Reset to safe position from anywhere"
     assume_starting_from: null
     waypoints:
-      - position: [90, 90, 90, 90]
+      - position: [default, default, default, default]
         duration: 3.0
-        description: "Safe home position"
+        description: "Safe default position"
 
   "01":
     name: "lower_for_placement"
     description: "Lower arm to ground for object placement"
-    assume_starting_from: [90, 90, 90, 90]
+    assume_starting_from: [default, default, default, default]
     waypoints:
-      - position: [90, 175, 80, 120]
+      - position: [default, max, min, max]
         duration: 6.25
         description: "Lower to ground, gripper open"
 
   "02":
     name: "return_to_baseline"
     description: "Return to ready position"
-    assume_starting_from: [90, 175, 80, 120]
+    assume_starting_from: [default, max, min, max]
     waypoints:
-      - position: [90, 90, 90, 120]
+      - position: [default, default, default, max]
         duration: 6.25
-        description: "Home position, gripper open"
+        description: "Default position, gripper open"
 
   "03":
     name: "pickup"
     description: "Pick up object from ground"
-    assume_starting_from: [90, 90, 90, 120]
+    assume_starting_from: [default, default, default, max]
     waypoints:
-      - position: [90, 175, 80, 120]
+      - position: [default, max, min, max]
         duration: 6.25
         description: "Lower to object"
 
-      - position: [90, 175, 80, 40]
+      - position: [default, max, min, min]
         duration: 2.0
         description: "Close gripper around object"
 
-      - position: [90, 90, 90, 40]
+      - position: [default, default, default, min]
         duration: 6.25
         description: "Lift object to home"
 
   "04":
     name: "drop"
     description: "Release object"
-    assume_starting_from: [90, 90, 90, 40]
+    assume_starting_from: [default, default, default, min]
     waypoints:
-      - position: [90, 90, 90, 120]
+      - position: [default, default, default, max]
         duration: 1.6
         description: "Open gripper"
