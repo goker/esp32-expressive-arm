@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Semantic Robot Calibrator</title>
+    <style>
+        body {
+            font-family: 'Monaco', monospace;
+            margin: 0;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #61dafb;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .servo-control {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #444;
+        }
+
+        .servo-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .servo-icon {
+            font-size: 32px;
+        }
+
+        .servo-title {
+            flex: 1;
+        }
+
+        .servo-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #61dafb;
+        }
+
+        .servo-description {
+            font-size: 11px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .value-display {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffd700;
+            text-align: center;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .help-text {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 15px;
+            border-left: 3px solid #61dafb;
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: #444;
+            outline: none;
+            -webkit-appearance: none;
+            margin-bottom: 20px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ffd700;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+
+        .semantic-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 16px;
+            background: #4a4a4a;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Monaco', monospace;
+            font-size: 13px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: #5a5a5a;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            background: #3a3a3a;
+            transform: translateY(0);
+        }
+
+        .semantic-button {
+            padding: 16px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #4a4a4a 0%, #3a3a3a 100%);
+            border: 2px solid #555;
+        }
+
+        .semantic-button:hover {
+            background: linear-gradient(135deg, #5a5a5a 0%, #4a4a4a 100%);
+            border-color: #61dafb;
+            box-shadow: 0 4px 12px rgba(97, 218, 251, 0.3);
+        }
+
+        .semantic-button.saved {
+            background: linear-gradient(135deg, #28a745 0%, #20803a 100%);
+            border-color: #28a745;
+        }
+
+        .saved-indicator {
+            font-size: 10px;
+            color: #888;
+            margin-top: 5px;
+            text-align: center;
+            min-height: 14px;
+        }
+
+        .saved-indicator.active {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .emergency-stop {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 3px solid #c82333 !important;
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+            width: 100%;
+        }
+
+        .emergency-stop:hover {
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%) !important;
+            box-shadow: 0 6px 16px rgba(220, 53, 69, 0.6);
+        }
+
+        .save-section {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #444;
+        }
+
+        .save-final {
+            background: linear-gradient(135deg, #28a745 0%, #20803a 100%) !important;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 24px;
+            width: 100%;
+            border: 3px solid #28a745 !important;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        .save-final:hover {
+            background: linear-gradient(135deg, #218838 0%, #1e7e34 100%) !important;
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.6);
+        }
+
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #28a745;
+            color: white;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .status.error {
+            background: #dc3545;
+        }
+
+        .calibration-summary {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .calibration-summary h3 {
+            margin: 0 0 10px 0;
+            color: #61dafb;
+            font-size: 14px;
+        }
+
+        .cal-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .cal-row:last-child {
+            border-bottom: none;
+        }
+
+        .cal-label {
+            color: #aaa;
+        }
+
+        .cal-value {
+            color: #ffd700;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="status" id="status"></div>
+
+    <div class="container">
+        <h1>🤖 Semantic Robot Arm Calibrator</h1>
+        <div class="subtitle">
+            Calibrate using intuitive descriptions instead of abstract angles
+        </div>
+
+        <button class="emergency-stop" onclick="emergencyStop()">🛑 EMERGENCY STOP</button>
+
+        <div class="controls-grid">
+            <!-- Base -->
+            <div class="servo-control">
+                <div class="servo-header">
+                    <div class="servo-icon">🔄</div>
+                    <div class="servo-title">
+                        <div class="servo-name">Base (Rotation)</div>
+                        <div class="servo-description">Left-right rotation of entire arm</div>
+                    </div>
+                </div>
+
+                <div class="value-display" id="value-0">90°</div>
+
+                <div class="help-text">
+                    {{ semantics.base.help }}
+                </div>
+
+                <div class="control-buttons">
+                    <button onclick="adjustServo(0, -10)">-10</button>
+                    <button onclick="adjustServo(0, -1)">-1</button>
+                    <button onclick="adjustServo(0, 1)">+1</button>
+                    <button onclick="adjustServo(0, 10)">+10</button>
+                </div>
+
+                <input type="range" min="0" max="180" value="90" id="servo-0" oninput="updateServo(0, this.value)">
+
+                <div class="semantic-buttons">
+                    <button class="semantic-button" onclick="savePosition(0, 'Full Left')" id="btn-0-0">
+                        ← Full Left
+                    </button>
+                    <button class="semantic-button" onclick="savePosition(0, 'Center')" id="btn-0-1">
+                        ● Center
+                    </button>
+                    <button class="semantic-button" onclick="savePosition(0, 'Full Right')" id="btn-0-2">
+                        Full Right →
+                    </button>
+                </div>
+                <div class="saved-indicator" id="saved-0"></div>
+            </div>
+
+            <!-- Shoulder -->
+            <div class="servo-control">
+                <div class="servo-header">
+                    <div class="servo-icon">💪</div>
+                    <div class="servo-title">
+                        <div class="servo-name">Shoulder (Up/Down)</div>
+                        <div class="servo-description">Vertical arm position</div>
+                    </div>
+                </div>
+
+                <div class="value-display" id="value-1">90°</div>
+
+                <div class="help-text">
+                    {{ semantics.shoulder.help }}
+                </div>
+
+                <div class="control-buttons">
+                    <button onclick="adjustServo(1, -10)">-10</button>
+                    <button onclick="adjustServo(1, -1)">-1</button>
+                    <button onclick="adjustServo(1, 1)">+1</button>
+                    <button onclick="adjustServo(1, 10)">+10</button>
+                </div>
+
+                <input type="range" min="0" max="180" value="90" id="servo-1" oninput="updateServo(1, this.value)">
+
+                <div class="semantic-buttons">
+                    <button class="semantic-button" onclick="savePosition(1, 'Lifted Up')" id="btn-1-0">
+                        ↑ Lifted Up
+                    </button>
+                    <button class="semantic-button" onclick="savePosition(1, 'Neutral')" id="btn-1-1">
+                        → Neutral
+                    </button>
+                    <button class="semantic-button" onclick="savePosition(1, 'Reaching Down')" id="btn-1-2">
+                        ↓ Reaching Down
+                    </button>
+                </div>
+                <div class="saved-indicator" id="saved-1"></div>
+            </div>
+
+            <!-- Elbow -->
+            <div class="servo-control">
+                <div class="servo-header">
+                    <div class="servo-icon">🦾</div>
+                    <div class="servo-title">
+                        <div class="servo-name">Elbow (Forward/Back)</div>
+                        <div class="servo-description">Arm extension position</div>
+                    </div>
+                </div>
+
+                <div class="value-display" id="value-2">90°</div>
+
+                <div class="help-text">
+                    {{ semantics.elbow.help }}
+                </div>
+
+                <div class="control-buttons">
+                    <button onclick="adjustServo(2, -10)">-10</button>
+                    <button onclick="adjustServo(2, -1)">-1</button>
+                    <button onclick="adjustServo(2, 1)">+1</button>
+                    <button onclick="adjustServo(2, 10)">+10</button>
+                </div>
+
+                <input type="range" min="0" max="180" value="90" id="servo-2" oninput="updateServo(2, this.value)">
+
+                <div class="semantic-buttons">
+                    <button class="semantic-button" onclick="savePosition(2, 'Pulled Back')" id="btn-2-0">
+                        ← Pulled Back
+                    </button>
+                    <button class="semantic-button" onclick="savePosition(2, 'Neutral')" id="btn-2-1">
+                        ● Neutral
+                    </button>
+                    <button class="semantic-button" onclick="savePosition(2, 'Extended Forward')" id="btn-2-2">
+                        → Extended Fwd
+                    </button>
+                </div>
+                <div class="saved-indicator" id="saved-2"></div>
+            </div>
+
+            <!-- Gripper -->
+            <div class="servo-control">
+                <div class="servo-header">
+                    <div class="servo-icon">🤏</div>
+                    <div class="servo-title">
+                        <div class="servo-name">Gripper (Open/Close)</div>
+                        <div class="servo-description">Pincer position</div>
+                    </div>
+                </div>
+
+                <div class="value-display" id="value-3">90°</div>
+
+                <div class="help-text">
+                    {{ semantics.gripper.help }}
+                </div>
+
+                <div class="control-buttons">
+                    <button onclick="adjustServo(3, -10)">-10</button>
+                    <button onclick="adjustServo(3, -1)">-1</button>
+                    <button onclick="adjustServo(3, 1)">+1</button>
+                    <button onclick="adjustServo(3, 10)">+10</button>
+                </div>
+
+                <input type="range" min="0" max="180" value="90" id="servo-3" oninput="updateServo(3, this.value)">
+
+                <div class="semantic-buttons">
+                    <button class="semantic-button" onclick="savePosition(3, 'Closed')" id="btn-3-0">
+                        🤏 Closed
+                    </button>
+                    <button class="semantic-button" onclick="savePosition(3, 'Neutral')" id="btn-3-1">
+                        ● Neutral
+                    </button>
+                    <button class="semantic-button" onclick="savePosition(3, 'Open')" id="btn-3-2">
+                        ✋ Open
+                    </button>
+                </div>
+                <div class="saved-indicator" id="saved-3"></div>
+            </div>
+        </div>
+
+        <div class="save-section">
+            <button class="save-final" onclick="saveCalibration()">
+                💾 SAVE CALIBRATION TO FILE
+            </button>
+
+            <div class="calibration-summary">
+                <h3>Current Calibration:</h3>
+                <div id="cal-summary"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let positions = [90, 90, 90, 90];
+        let calibration = {};
+        let updateTimeout = null;
+        const servoNames = ['base', 'shoulder', 'elbow', 'gripper'];
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = isError ? 'status error' : 'status';
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 2500);
+        }
+
+        function emergencyStop() {
+            if (confirm('⚠️ Move all servos to default positions?')) {
+                const targets = servoNames.map((name, i) => {
+                    return calibration[name] ? calibration[name].default : 90;
+                });
+
+                const startPositions = [...positions];
+                const duration = 3000;
+                const steps = 60;
+                const stepDelay = duration / steps;
+                let currentStep = 0;
+
+                const interval = setInterval(() => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+                    const t = progress < 0.5
+                        ? 2 * progress * progress
+                        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                    for (let i = 0; i < 4; i++) {
+                        const angle = Math.round(startPositions[i] + (targets[i] - startPositions[i]) * t);
+                        positions[i] = angle;
+                        document.getElementById(`servo-${i}`).value = angle;
+                        document.getElementById(`value-${i}`).textContent = `${angle}°`;
+                    }
+
+                    fetch('/move', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({servo: 0, angle: positions[0]})
+                    });
+
+                    if (currentStep >= steps) {
+                        clearInterval(interval);
+                        showStatus('✓ Safe position reached');
+                    }
+                }, stepDelay);
+            }
+        }
+
+        function adjustServo(servo, delta) {
+            let newAngle = positions[servo] + delta;
+            newAngle = Math.max(0, Math.min(180, newAngle));
+            document.getElementById(`servo-${servo}`).value = newAngle;
+            updateServo(servo, newAngle);
+        }
+
+        function updateServo(servo, angle) {
+            positions[servo] = parseInt(angle);
+            document.getElementById(`value-${servo}`).textContent = `${angle}°`;
+
+            if (updateTimeout) clearTimeout(updateTimeout);
+
+            updateTimeout = setTimeout(() => {
+                fetch('/move', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({servo, angle: parseInt(angle)})
+                })
+                .catch(err => console.error('Connection error:', err));
+            }, 100);
+        }
+
+        function savePosition(servo, label) {
+            fetch('/save_semantic', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({servo: servo, label: label})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    calibration = data.calibration;
+                    updateCalibrationSummary();
+
+                    // Visual feedback
+                    const buttonIndex = getButtonIndex(servo, label);
+                    const buttonId = `btn-${servo}-${buttonIndex}`;
+                    const button = document.getElementById(buttonId);
+                    button.classList.add('saved');
+
+                    const savedIndicator = document.getElementById(`saved-${servo}`);
+                    savedIndicator.textContent = `✓ Saved: ${label} = ${positions[servo]}°`;
+                    savedIndicator.classList.add('active');
+
+                    showStatus(`✓ ${label}: ${positions[servo]}°`);
+                } else {
+                    showStatus(`Failed: ${data.error}`, true);
+                }
+            })
+            .catch(err => {
+                console.error('Save error:', err);
+                showStatus('Error saving position', true);
+            });
+        }
+
+        function getButtonIndex(servo, label) {
+            const labels = [
+                ['Full Left', 'Center', 'Full Right'],
+                ['Lifted Up', 'Neutral', 'Reaching Down'],
+                ['Pulled Back', 'Neutral', 'Extended Forward'],
+                ['Closed', 'Neutral', 'Open']
+            ];
+            return labels[servo].indexOf(label);
+        }
+
+        function saveCalibration() {
+            fetch('/save_calibration', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus('✓ Calibration saved to file!');
+                } else {
+                    showStatus('Failed to save', true);
+                }
+            });
+        }
+
+        function updateCalibrationSummary() {
+            const summary = document.getElementById('cal-summary');
+            let html = '';
+
+            servoNames.forEach(name => {
+                const cal = calibration[name];
+                if (cal) {
+                    html += `
+                        <div class="cal-row">
+                            <span class="cal-label">${name}:</span>
+                            <span class="cal-value">min=${cal.min}° default=${cal.default}° max=${cal.max}°</span>
+                        </div>
+                    `;
+                }
+            });
+
+            summary.innerHTML = html || '<div style="color: #666;">No calibration data yet</div>';
+        }
+
+        // Load calibration on start
+        fetch('/get_data')
+            .then(r => r.json())
+            .then(data => {
+                calibration = data.calibration;
+                updateCalibrationSummary();
+            })
+            .catch(err => console.error('Load error:', err));
+    </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{
+  "name": "chickensimba",
+  "description": "",
+  "steps": [
+    {
+      "name": "Ready",
+      "position": [
+        90,
+        90,
+        90,
+        90
+      ],
+      "duration": 2
+    },
+    {
+      "name": "Prepare to Grab",
+      "position": [
+        90,
+        20,
+        61,
+        110
+      ],
+      "duration": 2
+    },
+    {
+      "name": "Grab",
+      "position": [
+        90,
+        20,
+        61,
+        80
+      ],
+      "duration": 2
+    },
+    {
+      "name": "Lift Like Simba",
+      "position": [
+        90,
+        70,
+        51,
+        80
+      ],
+      "duration": 2
+    },
+    {
+      "name": "Drop It Like It's Hot",
+      "position": [
+        90,
+        70,
+        51,
+        110
+      ],
+      "duration": 2
+    }
+  ],
+  "created": "2025-12-26T14:19:25.844988"
+}

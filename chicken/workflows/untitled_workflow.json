@@ -1,0 +1,67 @@
+{
+  "name": "Untitled Workflow",
+  "description": "",
+  "steps": [
+    {
+      "name": "Ready",
+      "position": [
+        90,
+        60,
+        90,
+        100
+      ],
+      "duration": 2
+    },
+    {
+      "name": "Ready to Grab",
+      "position": [
+        90,
+        20,
+        100,
+        110
+      ],
+      "duration": 2
+    },
+    {
+      "name": "Grab Object",
+      "position": [
+        90,
+        20,
+        100,
+        90
+      ],
+      "duration": 2
+    },
+    {
+      "name": "Lift Object",
+      "position": [
+        90,
+        20,
+        40,
+        90
+      ],
+      "duration": 2
+    },
+    {
+      "name": "Display Object Like Simba",
+      "position": [
+        90,
+        50,
+        40,
+        90
+      ],
+      "duration": 2
+    },
+    {
+      "name": "Drop Object",
+      "position": [
+        90,
+        50,
+        40,
+        120
+      ],
+      "duration": 2
+    }
+  ],
+  "created": "2025-12-26T14:09:38.643636"
+}

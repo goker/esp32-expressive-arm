@@ -29,6 +29,13 @@ def load_calibration():
         return json.load(f)
 
 
+def load_servo_config():
+    """Load servo configuration (includes inversion settings)"""
+    config_path = os.path.join(script_dir, "servo_config.json")
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+
 def load_sequence():
     """Load motion sequence from YAML"""
     yaml_path = os.path.join(script_dir, "correct_sequence.yaml")
@@ -36,21 +43,31 @@ def load_sequence():
         return yaml.safe_load(f)
 
 
-def resolve_position(position_spec, calibration):
-    """Convert keywords (min/max/default) to actual angles"""
+def resolve_position(position_spec, calibration, servo_config):
+    """Convert keywords (min/max/default) to actual angles, applying inversions"""
     servo_names = ['base', 'shoulder', 'elbow', 'gripper']
     resolved = []
 
     for i, spec in enumerate(position_spec):
         servo_name = servo_names[i]
 
+        # Get logical angle from spec
         if isinstance(spec, str):
             if spec in ['min', 'max', 'default']:
-                resolved.append(calibration[servo_name][spec])
+                logical_angle = calibration[servo_name][spec]
             else:
                 raise ValueError(f"Invalid keyword '{spec}' for {servo_name}")
         else:
-            resolved.append(int(spec))
+            logical_angle = int(spec)
+
+        # Apply inversion if needed
+        is_inverted = servo_config['servos'][servo_name].get('inverted', False)
+        if is_inverted:
+            physical_angle = 180 - logical_angle
+        else:
+            physical_angle = logical_angle
+
+        resolved.append(physical_angle)
 
     return resolved
 
@@ -58,6 +75,7 @@ def resolve_position(position_spec, calibration):
 def run_stage(stage_num):
     """Run a stage - load YAML, resolve positions, send to robot"""
     calibration = load_calibration()
+    servo_config = load_servo_config()
     sequence = load_sequence()
     stage = sequence['stages'][stage_num]
 
@@ -68,7 +86,7 @@ def run_stage(stage_num):
     # Resolve all waypoints
     waypoints_resolved = []
     for i, wp in enumerate(stage['waypoints']):
-        resolved_pos = resolve_position(wp['position'], calibration)
+        resolved_pos = resolve_position(wp['position'], calibration, servo_config)
         waypoints_resolved.append({
             'position': resolved_pos,
             'duration': wp['duration'],
@@ -80,13 +98,14 @@ def run_stage(stage_num):
         print(f"  Resolved: {resolved_pos}")
         print(f"  Duration: {wp['duration']}s")
 
-    # Get default positions from calibration
-    defaults = [
-        calibration['base']['default'],
-        calibration['shoulder']['default'],
-        calibration['elbow']['default'],
-        calibration['gripper']['default']
-    ]
+    # Get default positions from calibration (with inversions applied)
+    servo_names = ['base', 'shoulder', 'elbow', 'gripper']
+    defaults = []
+    for servo_name in servo_names:
+        logical_default = calibration[servo_name]['default']
+        is_inverted = servo_config['servos'][servo_name].get('inverted', False)
+        physical_default = (180 - logical_default) if is_inverted else logical_default
+        defaults.append(physical_default)
 
     # Generate MicroPython code
     micropython_code = f"""

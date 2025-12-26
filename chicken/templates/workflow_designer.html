@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Workflow Designer</title>
+    <style>
+        body {
+            font-family: 'Monaco', monospace;
+            margin: 0;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 20px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #444;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            color: #61dafb;
+            font-size: 24px;
+        }
+
+        h2 {
+            margin: 0 0 15px 0;
+            color: #61dafb;
+            font-size: 18px;
+            border-bottom: 2px solid #444;
+            padding-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        .servo-control {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #444;
+        }
+
+        .servo-control:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .servo-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #61dafb;
+            margin-bottom: 5px;
+        }
+
+        .value-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 8px;
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #444;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffd700;
+            cursor: pointer;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            border-radius: 4px;
+            color: #fff;
+            font-family: 'Monaco', monospace;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        button {
+            padding: 10px 16px;
+            background: #4a4a4a;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Monaco', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #5a5a5a;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #61dafb 0%, #4fa8c5 100%);
+            font-weight: bold;
+            padding: 12px 20px;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #4fa8c5 0%, #3d8ca3 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20803a 100%);
+            font-weight: bold;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        .step-item {
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 2px solid #333;
+            transition: all 0.2s;
+        }
+
+        .step-item:hover {
+            border-color: #61dafb;
+            background: #222;
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .step-number {
+            color: #61dafb;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .step-name {
+            flex: 1;
+            margin-left: 10px;
+            color: #fff;
+            font-size: 13px;
+        }
+
+        .step-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .step-details {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .step-position {
+            font-family: 'Courier New', monospace;
+            color: #ffd700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #28a745;
+            color: white;
+            border-radius: 6px;
+            display: none;
+            z-index: 1000;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .status.error {
+            background: #dc3545;
+        }
+
+        .workflow-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .workflow-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #1a1a1a;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .workflow-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #2d2d2d;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .workflow-item:hover {
+            background: #3d3d3d;
+            border-left: 3px solid #61dafb;
+        }
+
+        .workflow-item-name {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .workflow-item-details {
+            color: #888;
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        .add-step-panel {
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+            border: 3px solid #61dafb;
+        }
+    </style>
+</head>
+<body>
+    <div class="status" id="status"></div>
+
+    <div class="container">
+        <div class="left-panel">
+            <!-- Workflow Info -->
+            <div class="panel">
+                <h2>🎬 Workflow Info</h2>
+                <div class="form-group">
+                    <label class="form-label">Workflow Name:</label>
+                    <input type="text" id="workflow-name" value="Untitled Workflow" onchange="updateWorkflowMeta()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description:</label>
+                    <textarea id="workflow-description" onchange="updateWorkflowMeta()" placeholder="What does this workflow do?"></textarea>
+                </div>
+                <div class="workflow-actions">
+                    <button class="btn-success" onclick="saveWorkflow()">💾 Save Workflow</button>
+                    <button onclick="newWorkflow()">🆕 New Workflow</button>
+                </div>
+            </div>
+
+            <!-- Servo Controls -->
+            <div class="panel">
+                <h2>🎮 Servo Controls</h2>
+                <div class="subtitle">Move servos to desired position</div>
+
+                <div class="servo-control">
+                    <div class="servo-name">Base (Rotation)</div>
+                    <div class="value-display" id="value-0">90°</div>
+                    <div class="control-buttons">
+                        <button class="btn-small" onclick="adjustServo(0, -10)">-10</button>
+                        <button class="btn-small" onclick="adjustServo(0, -1)">-1</button>
+                        <button class="btn-small" onclick="adjustServo(0, 1)">+1</button>
+                        <button class="btn-small" onclick="adjustServo(0, 10)">+10</button>
+                    </div>
+                    <input type="range" min="0" max="180" value="90" id="servo-0" oninput="updateServo(0, this.value)">
+                </div>
+
+                <div class="servo-control">
+                    <div class="servo-name">Shoulder (Up/Down)</div>
+                    <div class="value-display" id="value-1">90°</div>
+                    <div class="control-buttons">
+                        <button class="btn-small" onclick="adjustServo(1, -10)">-10</button>
+                        <button class="btn-small" onclick="adjustServo(1, -1)">-1</button>
+                        <button class="btn-small" onclick="adjustServo(1, 1)">+1</button>
+                        <button class="btn-small" onclick="adjustServo(1, 10)">+10</button>
+                    </div>
+                    <input type="range" min="0" max="180" value="90" id="servo-1" oninput="updateServo(1, this.value)">
+                </div>
+
+                <div class="servo-control">
+                    <div class="servo-name">Elbow (Forward/Back)</div>
+                    <div class="value-display" id="value-2">90°</div>
+                    <div class="control-buttons">
+                        <button class="btn-small" onclick="adjustServo(2, -10)">-10</button>
+                        <button class="btn-small" onclick="adjustServo(2, -1)">-1</button>
+                        <button class="btn-small" onclick="adjustServo(2, 1)">+1</button>
+                        <button class="btn-small" onclick="adjustServo(2, 10)">+10</button>
+                    </div>
+                    <input type="range" min="0" max="180" value="90" id="servo-2" oninput="updateServo(2, this.value)">
+                </div>
+
+                <div class="servo-control">
+                    <div class="servo-name">Gripper (Open/Close)</div>
+                    <div class="value-display" id="value-3">90°</div>
+                    <div class="control-buttons">
+                        <button class="btn-small" onclick="adjustServo(3, -10)">-10</button>
+                        <button class="btn-small" onclick="adjustServo(3, -1)">-1</button>
+                        <button class="btn-small" onclick="adjustServo(3, 1)">+1</button>
+                        <button class="btn-small" onclick="adjustServo(3, 10)">+10</button>
+                    </div>
+                    <input type="range" min="0" max="180" value="90" id="servo-3" oninput="updateServo(3, this.value)">
+                </div>
+            </div>
+
+            <!-- Add Step -->
+            <div class="panel add-step-panel">
+                <h2>➕ Add Current Position as Step</h2>
+                <div class="form-group">
+                    <label class="form-label">Step Name:</label>
+                    <input type="text" id="step-name" placeholder="e.g., Lower to object">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Duration (seconds):</label>
+                    <input type="number" id="step-duration" value="2.0" step="0.1" min="0.1" max="10">
+                </div>
+                <button class="btn-primary" onclick="addStep()" style="width: 100%;">
+                    ➕ Add Step to Workflow
+                </button>
+            </div>
+
+            <!-- Load Workflow -->
+            <div class="panel">
+                <h2>📂 Load Workflow</h2>
+                <div class="workflow-list" id="workflow-list">
+                    <div style="text-align: center; color: #666; padding: 20px;">
+                        No saved workflows yet
+                    </div>
+                </div>
+                <button onclick="loadWorkflowList()" style="width: 100%; margin-top: 10px;">
+                    🔄 Refresh List
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel - Sequence -->
+        <div class="panel">
+            <h2>📋 Workflow Sequence</h2>
+            <div class="subtitle" id="workflow-title">Untitled Workflow • 0 steps</div>
+            <div id="steps-container">
+                <div class="empty-state">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🎬</div>
+                    <div>No steps yet</div>
+                    <div style="margin-top: 10px;">Move servos and click "Add Step" to start building your workflow</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let positions = [90, 90, 90, 90];
+        let workflow = { name: "Untitled Workflow", description: "", steps: [] };
+        let updateTimeout = null;
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = isError ? 'status error' : 'status';
+            status.style.display = 'block';
+            setTimeout(() => status.style.display = 'none', 2500);
+        }
+
+        function adjustServo(servo, delta) {
+            let newAngle = positions[servo] + delta;
+            newAngle = Math.max(0, Math.min(180, newAngle));
+            document.getElementById(`servo-${servo}`).value = newAngle;
+            updateServo(servo, newAngle);
+        }
+
+        function updateServo(servo, angle) {
+            positions[servo] = parseInt(angle);
+            document.getElementById(`value-${servo}`).textContent = `${angle}°`;
+
+            if (updateTimeout) clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(() => {
+                fetch('/move', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({servo, angle: parseInt(angle)})
+                }).catch(err => console.error('Connection error:', err));
+            }, 100);
+        }
+
+        function updateWorkflowMeta() {
+            const name = document.getElementById('workflow-name').value;
+            const description = document.getElementById('workflow-description').value;
+
+            fetch('/update_workflow_meta', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, description})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    workflow = data.workflow;
+                    updateWorkflowDisplay();
+                }
+            });
+        }
+
+        function addStep() {
+            const name = document.getElementById('step-name').value || `Step ${workflow.steps.length + 1}`;
+            const duration = parseFloat(document.getElementById('step-duration').value) || 2.0;
+
+            fetch('/add_step', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, duration})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    workflow = data.workflow;
+                    updateWorkflowDisplay();
+                    showStatus(`✓ Added: ${name}`);
+
+                    // Clear step name for next step
+                    document.getElementById('step-name').value = '';
+                } else {
+                    showStatus('Failed to add step', true);
+                }
+            })
+            .catch(err => showStatus('Error adding step', true));
+        }
+
+        function removeStep(index) {
+            if (confirm(`Remove step ${index + 1}?`)) {
+                fetch('/remove_step', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({index})
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        workflow = data.workflow;
+                        updateWorkflowDisplay();
+                        showStatus('✓ Step removed');
+                    }
+                });
+            }
+        }
+
+        function gotoStep(index) {
+            fetch('/goto_step', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({index})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    positions = data.positions;
+                    for (let i = 0; i < 4; i++) {
+                        document.getElementById(`servo-${i}`).value = positions[i];
+                        document.getElementById(`value-${i}`).textContent = `${positions[i]}°`;
+                    }
+                    showStatus(`✓ Moved to: ${data.step.name}`);
+                }
+            });
+        }
+
+        function updateWorkflowDisplay() {
+            document.getElementById('workflow-title').textContent =
+                `${workflow.name} • ${workflow.steps.length} step${workflow.steps.length !== 1 ? 's' : ''}`;
+
+            const container = document.getElementById('steps-container');
+
+            if (workflow.steps.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🎬</div>
+                        <div>No steps yet</div>
+                        <div style="margin-top: 10px;">Move servos and click "Add Step"</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = workflow.steps.map((step, i) => `
+                <div class="step-item">
+                    <div class="step-header">
+                        <span class="step-number">${i + 1}.</span>
+                        <span class="step-name">${step.name}</span>
+                        <div class="step-actions">
+                            <button class="btn-small" onclick="gotoStep(${i})" title="Move to this position">
+                                📍 Go
+                            </button>
+                            <button class="btn-small btn-danger" onclick="removeStep(${i})" title="Remove step">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                    <div class="step-details">
+                        <span class="step-position">[${step.position.join(', ')}]</span>
+                        • ${step.duration}s
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveWorkflow() {
+            if (workflow.steps.length === 0) {
+                showStatus('Add at least one step first!', true);
+                return;
+            }
+
+            fetch('/save_workflow', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(`✓ Saved: ${data.filename}`);
+                    loadWorkflowList();
+                } else {
+                    showStatus('Failed to save', true);
+                }
+            });
+        }
+
+        function newWorkflow() {
+            if (workflow.steps.length > 0 && !confirm('Discard current workflow and start new?')) {
+                return;
+            }
+
+            fetch('/new_workflow', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    workflow = data.workflow;
+                    document.getElementById('workflow-name').value = 'Untitled Workflow';
+                    document.getElementById('workflow-description').value = '';
+                    updateWorkflowDisplay();
+                    showStatus('✓ New workflow started');
+                }
+            });
+        }
+
+        function loadWorkflowList() {
+            fetch('/list_workflows')
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('workflow-list');
+
+                if (!data.success || data.workflows.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No saved workflows yet</div>';
+                    return;
+                }
+
+                container.innerHTML = data.workflows.map(wf => `
+                    <div class="workflow-item" onclick="loadWorkflow('${wf.filename}')">
+                        <div class="workflow-item-name">${wf.name}</div>
+                        <div class="workflow-item-details">
+                            ${wf.steps} step${wf.steps !== 1 ? 's' : ''} • ${wf.filename}
+                        </div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function loadWorkflow(filename) {
+            if (workflow.steps.length > 0 && !confirm('Load workflow? Current work will be lost.')) {
+                return;
+            }
+
+            fetch('/load_workflow', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({filename})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    workflow = data.workflow;
+                    document.getElementById('workflow-name').value = workflow.name;
+                    document.getElementById('workflow-description').value = workflow.description || '';
+                    updateWorkflowDisplay();
+                    showStatus(`✓ Loaded: ${workflow.name}`);
+                } else {
+                    showStatus('Failed to load workflow', true);
+                }
+            });
+        }
+
+        // Initialize
+        fetch('/get_data')
+            .then(r => r.json())
+            .then(data => {
+                workflow = data.workflow;
+                positions = data.positions;
+                updateWorkflowDisplay();
+            });
+
+        loadWorkflowList();
+    </script>
+</body>
+</html>

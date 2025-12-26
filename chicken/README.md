@@ -1,22 +1,52 @@
-# Chicken Pickup Demo
+# Chicken - Robot Arm Control
 
-Precision robot arm demo that picks up and releases small objects with smooth, controlled movements.
+Precision robot arm control with multiple ways to create sequences:
+- **Pre-defined sequences** (`main.py`) - YAML-based with semantic keywords
+- **Custom workflows** (`workflow_designer.py`) - Visual web designer for custom sequences
+- **Semantic calibration** (`calibrator_semantic.py`) - Intuitive servo calibration
 
-## Quick Start
+## Quick Start Options
+
+### Option A: Pre-defined Pickup Sequence (main.py)
 
 ```bash
 cd chicken
 
 # 1. Calibrate (first time only)
-python __calibrator_simple.py
+python calibrator_semantic.py
+# Open http://localhost:3001 and follow the intuitive prompts
 
 # 2. Run pickup sequence
 python main.py 01    # Lower arm
 # <-- PLACE OBJECT HERE
-python main.py 02    # Baseline (will jerk once from home(), then smooth)
+python main.py 02    # Baseline
 python main.py 03    # Pick up object
 python main.py 04    # Drop object
 ```
+
+### Option B: Design Custom Workflows (NEW!)
+
+Create your own sequences with a visual web interface - exactly like the calibrator:
+
+```bash
+cd chicken
+
+# 1. Calibrate (first time only)
+python calibrator_semantic.py
+
+# 2. Design your workflow
+python workflow_designer_simple.py
+# Open http://localhost:3002
+# - Move servos to position (just like calibrator!)
+# - Click "Add Step"
+# - Repeat to build sequence
+# - Save workflow
+
+# 3. Execute your workflow
+python chicken_simple.py my_workflow.json
+```
+
+**Works exactly like the calibrator - no inversion logic, just save positions!**
 
 **Speed too fast?** Edit `servo_utils.py` and increase `SPEED_MULTIPLIER` (e.g., `2.0` for half speed).
 
@@ -24,16 +54,37 @@ python main.py 04    # Drop object
 
 **IMPORTANT:** Run calibration before using any chicken scripts!
 
-### Simple Calibration (Shoulder & Elbow Only):
+### NEW: Semantic Web Calibrator (Recommended!)
+
+The semantic calibrator uses **intuitive descriptions** instead of abstract angles:
+
+```bash
+python calibrator_semantic.py
+```
+
+Then open http://localhost:3001
+
+**Features:**
+- 🎯 **Intuitive labels**: "Gripper Open/Closed", "Arm Reaching Down"
+- 🖱️ **Visual interface**: Sliders + fine control buttons
+- 💡 **Help text**: Describes what each position means
+- ✅ **Visual feedback**: Buttons turn green when saved
+- 🛑 **Emergency stop**: Returns to safe position instantly
+
+**Example labels:**
+- Gripper: "🤏 Closed" / "● Neutral" / "✋ Open"
+- Shoulder: "↑ Lifted Up" / "→ Neutral" / "↓ Reaching Down"
+- Elbow: "← Pulled Back" / "● Neutral" / "→ Extended Forward"
+
+See [SEMANTIC_CALIBRATION.md](SEMANTIC_CALIBRATION.md) for detailed guide.
+
+### Alternative: Simple Terminal Calibrator
+
 ```bash
 python __calibrator_simple.py
 ```
 
-This will:
-1. Test shoulder (up/down movement)
-2. Test elbow (forward/backward movement)
-3. Save calibration to `servo_config.json`
-4. All scripts automatically use this calibration
+Terminal-based, tests shoulder & elbow only. Saves to `servo_config.json`.
 
 You only need to calibrate once (unless servos get rewired).
 
