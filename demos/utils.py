@@ -71,6 +71,20 @@ SERVO_PINS = [4, 5, 6, 7]
 servos = [PWM(Pin(p), freq=50) for p in SERVO_PINS]
 # Global state to track current smoothed positions
 smooth_pos = [90.0, 90.0, 90.0, 90.0]
+# Track last time each servo was moved (for watchdog)
+last_move = [time.ticks_ms()] * 4
+
+def watchdog_callback(t):
+    """Automatically detaches servos that haven't moved in 10 seconds."""
+    now = time.ticks_ms()
+    for i in range(4):
+        if time.ticks_diff(now, last_move[i]) > 10000:
+            servos[i].duty(0)
+
+# Start background watchdog (checks every second)
+from machine import Timer
+watchdog_timer = Timer(-1)
+watchdog_timer.init(period=1000, mode=Timer.PERIODIC, callback=watchdog_callback)
 
 # --- Low-Level Control ---
 
@@ -83,6 +97,13 @@ def set_servo_direct(servo_num, angle):
     duty = angle_to_duty(angle)
     servos[servo_num].duty(duty)
     smooth_pos[servo_num] = float(angle)
+    last_move[servo_num] = time.ticks_ms()
+
+def stop_servo(servo_num):
+    """Stops the PWM signal to a servo, allowing it to relax/detach."""
+    servos[servo_num].duty(0)
+    # Set timestamp to "way in the past" so watchdog doesn't fight it
+    last_move[servo_num] = time.ticks_ms() - 20000
 
 def minimum_jerk(t):
     """Calculates a smooth, human-like motion profile."""
@@ -126,23 +147,31 @@ def move_servos_to(targets, duration):
 
 def home():
     print("Action: Homing arm...")
-    move_servos_to({0: 90, 1: 90, 2: 90, 3: 90}, 1.0)
+    # Move arm to neutral, but preserve current gripper state (servo 3)
+    move_servos_to({0: 90, 1: 90, 2: 90}, 1.0)
     print("Homing complete.")
 
 def reach_forward():
     print("Action: Reaching forward...")
-    move_servos_to({1: 30, 2: 140}, 1.5)
+    # Ensure base is centered when reaching forward
+    move_servos_to({0: 90, 1: 30, 2: 140}, 1.5)
     print("Reach complete.")
 
 def grip():
-    print("Action: Gripping...")
-    move_servos_to({3: 180}, 0.75)
-    time.sleep(0.5) # Extra pause for physical grip
+    print("Action: Gripping (Incremental)...")
+    # We move in a few discrete steps until "pinzed"
+    # This avoids the continuous hard driving of a single long move to 0
+    # and keeps the torque on as requested.
+    target_angles = [120, 80, 50]
+    for angle in target_angles:
+        move_servos_to({3: angle}, 0.3)
+        time.sleep(0.1)
     print("Grip complete.")
 
 def release():
     print("Action: Releasing...")
-    move_servos_to({3: 90}, 0.75)
+    # Re-engage is automatic when we set a new position
+    move_servos_to({3: 180}, 0.75)
     print("Release complete.")
     
 def lift():

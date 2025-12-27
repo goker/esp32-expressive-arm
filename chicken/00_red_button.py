@@ -16,18 +16,14 @@ from servo_utils import get_calibrated_angles
 
 CODE = SERVO_HEADER + get_calibrated_angles() + '''
 # Wrap servo functions to use calibration
-_original_set_servo = set_servo
 _original_set_servo_direct = set_servo_direct
-
-def set_servo(servo_num, target):
-    """Set servo with calibration applied"""
-    calibrated = calibrated_angle(servo_num, target)
-    _original_set_servo(servo_num, calibrated)
 
 def set_servo_direct(servo_num, angle):
     """Set servo directly with calibration applied"""
     calibrated = calibrated_angle(servo_num, angle)
     _original_set_servo_direct(servo_num, calibrated)
+    # Correct smooth_pos to track logical angle
+    smooth_pos[servo_num] = float(angle)
 
 print("\\n=== EMERGENCY STOP - RETURNING HOME ===\\n")
 
@@ -38,7 +34,7 @@ print("Returning to safe position (no base rotation)...")
 target_positions = [None, 90, 90, 90]  # Base stays, shoulder/elbow/gripper to 90
 
 # Capture start positions ONCE before loop
-start_positions = [None, current_pos[1], current_pos[2], current_pos[3]]
+start_positions = [None, smooth_pos[1], smooth_pos[2], smooth_pos[3]]
 
 steps = int(500 * SPEED_MULTIPLIER)  # EXTRA slow for emergency return
 delay = 0.08 * SPEED_MULTIPLIER  # Slower delay

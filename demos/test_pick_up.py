@@ -11,6 +11,7 @@ print("=== Manual Test: Pick Up Object ===")
 
 def main_sequence():
     home()
+    release() # Open gripper before reaching
     reach_forward()
     grip()
     lift()

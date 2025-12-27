@@ -35,6 +35,8 @@ CODE = SERVO_HEADER + '''
 print("Action: Starting sequence...")
 
 def main_sequence():
+    home()
+    release()
     reach_forward()
     grip()
     lift()
