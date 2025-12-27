@@ -7,7 +7,7 @@ use std::process::Command;
 #[clap(version = "1.0", author = "Your Name")]
 struct Opts {
     #[clap(subcommand)]
-    subcmd: SubCommand,
+    subcmd: Option<SubCommand>,
 }
 
 #[derive(Parser)]
@@ -76,6 +76,12 @@ struct WhisperResponseBody {
     text: String,
 }
 
+// Structs for Deepgram API request
+#[derive(Serialize)]
+struct DeepgramRequestBody {
+    text: String,
+}
+
 /// Records 5 seconds of audio and transcribes it using OpenAI Whisper.
 async fn record_and_transcribe() -> Result<String, Box<dyn std::error::Error>> {
     const AUDIO_FILE: &str = "output.wav";
@@ -92,17 +98,55 @@ async fn record_and_transcribe() -> Result<String, Box<dyn std::error::Error>> {
     Ok(transcript)
 }
 
+/// Synthesizes speech from text using the Deepgram API and plays it.
+async fn speak(text: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Abel says: {}", text);
+    let api_key =
+        std::env::var("DEEPGRAM_API_KEY").expect("DEEPGRAM_API_KEY environment variable not set");
+    const TTS_FILE: &str = "tts_output.mp3";
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post("https://api.deepgram.com/v1/speak?model=aura-asteria-en")
+        .header("Authorization", format!("Token {}", api_key))
+        .header("Content-Type", "application/json")
+        .json(&DeepgramRequestBody {
+            text: text.to_string(),
+        })
+        .send()
+        .await?;
+
+    if response.status().is_success() {
+        let audio_data = response.bytes().await?;
+        std::fs::write(TTS_FILE, &audio_data)?;
+
+        // Play the audio using a system command (afplay for macOS)
+        let status = Command::new("afplay").arg(TTS_FILE).status()?;
+        if !status.success() {
+            eprintln!("Failed to play audio file.");
+        }
+    } else {
+        let error_text = response.text().await?;
+        eprintln!("Deepgram API Error: {}", error_text);
+    }
+
+    Ok(())
+}
+
+
 /// Generates a Python script using the Gemini API and executes it.
 async fn generate_and_run_script(prompt: String) -> Result<(), Box<dyn std::error::Error>> {
     let api_key =
         std::env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not set");
 
-    let instructions = std::fs::read_to_string("../ai/AGENT_INSTRUCTIONS.md")?;
+    let instructions = std::fs::read_to_string("ai/AGENT_INSTRUCTIONS.md")?;
     let full_prompt = format!(
         "{}
 
 ---\n
 USER REQUEST: {}
+
+IMPORTANT: Use ONLY the high-level action functions (home, reach_forward, grip, release, lift) to fulfill the request. Do not attempt to use low-level servo commands.
 
 Remember: Return ONLY executable Python code.",
         instructions,
@@ -145,12 +189,12 @@ Remember: Return ONLY executable Python code.",
     }
 
     // Save the script to the demos directory
-    let demos_dir = std::path::Path::new("../demos");
+    let demos_dir = std::path::Path::new("demos");
     let next_num = (std::fs::read_dir(demos_dir)?
         .filter_map(Result::ok)
         .filter_map(|e| e.file_name().to_str()?.split('_').next()?.parse::<u32>().ok())
         .max()
-        .unwrap_or(5)) 
+        .unwrap_or(5))
         + 1;
 
     let file_name = format!("{:02}_generated.py", next_num);
@@ -165,11 +209,8 @@ Remember: Return ONLY executable Python code.",
     new_perms.set_mode(0o755);
     std::fs::set_permissions(&file_path, new_perms)?;
 
-    // Execute the script
-    let output = Command::new("python3")
-        .current_dir("..")
-        .arg(file_path.strip_prefix("../").unwrap())
-        .output()?;
+    // Execute the script using the project's virtual environment
+    let output = Command::new(".venv/bin/python").arg(&file_path).output()?;
 
     println!("Script output:\n{}", String::from_utf8_lossy(&output.stdout));
     if !output.stderr.is_empty() {
@@ -181,13 +222,38 @@ Remember: Return ONLY executable Python code.",
     Ok(())
 }
 
+/// Runs the interactive voice session.
+async fn interactive_mode() -> Result<(), Box<dyn std::error::Error>> {
+    speak("Hello! I'm Abel, your robot assistant. How can I help you?").await?;
+
+    loop {
+        let prompt = record_and_transcribe().await?;
+        let prompt_lower = prompt.to_lowercase();
+        if prompt_lower.contains("goodbye") || prompt_lower.trim() == "no" {
+            speak("Goodbye!").await?;
+            break;
+        }
+
+        if !prompt.is_empty() {
+            println!("Got prompt: \"{}\"", prompt);
+            generate_and_run_script(prompt).await?;
+            speak("Is there anything else?").await?;
+        } else {
+            println!("No speech detected or transcription failed.");
+            speak("I didn't catch that. Please try again.").await?;
+        }
+    }
+    Ok(())
+}
+
+
 #[tokio::main] async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts: Opts = Opts::parse();
     match opts.subcmd {
-        SubCommand::Do { prompt } => {
+        Some(SubCommand::Do { prompt }) => {
             generate_and_run_script(prompt).await?;
         }
-        SubCommand::Listen => {
+        Some(SubCommand::Listen) => {
             let prompt = record_and_transcribe().await?;
             if !prompt.is_empty() {
                 println!("Got prompt: \"{}\"", prompt);
@@ -195,6 +261,9 @@ Remember: Return ONLY executable Python code.",
             } else {
                 println!("No speech detected or transcription failed.");
             }
+        }
+        None => {
+            interactive_mode().await?;
         }
     }
     Ok(())

@@ -50,7 +50,7 @@ def run_on_esp32(micropython_code, port=None):
     print(f"Connected to: {port}\n")
 
     result = subprocess.run(
-        ["mpremote", "connect", port, "exec", micropython_code],
+        [sys.executable, "-m", "mpremote", "connect", port, "exec", micropython_code],
         capture_output=False
     )
 
@@ -65,56 +65,93 @@ def run_on_esp32(micropython_code, port=None):
 SERVO_HEADER = '''
 from machine import Pin, PWM
 import time
-import math
 
-# Servo pins: Base=4, Shoulder=5, Elbow=6, Gripper=7
+# --- Core Setup ---
 SERVO_PINS = [4, 5, 6, 7]
-SERVO_NAMES = ["Base", "Shoulder", "Elbow", "Gripper"]
-
-# State
-current_pos = [90, 90, 90, 90]
+servos = [PWM(Pin(p), freq=50) for p in SERVO_PINS]
+# Global state to track current smoothed positions
 smooth_pos = [90.0, 90.0, 90.0, 90.0]
-last_duty = [0, 0, 0, 0]
-SMOOTHING = 0.5
 
-# Initialize servos
-servos = []
-for pin in SERVO_PINS:
-    pwm = PWM(Pin(pin), freq=50)
-    servos.append(pwm)
+# --- Low-Level Control ---
 
 def angle_to_duty(angle):
-    """Convert angle (0-180) to duty cycle"""
-    return int(round(26 + (angle / 180) * (128 - 26)))
-
-def set_servo(servo_num, target):
-    """Set servo with smoothing and jitter reduction"""
-    global smooth_pos, last_duty
-    smooth_pos[servo_num] = smooth_pos[servo_num] * (1 - SMOOTHING) + target * SMOOTHING
-    duty = angle_to_duty(smooth_pos[servo_num])
-    if duty != last_duty[servo_num]:
-        servos[servo_num].duty(duty)
-        last_duty[servo_num] = duty
-    current_pos[servo_num] = int(smooth_pos[servo_num])
+    """Converts angle (0-180) to PWM duty cycle."""
+    return int(round(26 + (angle / 180.0) * (128 - 26)))
 
 def set_servo_direct(servo_num, angle):
-    """Set servo directly without smoothing"""
+    """Sets a servo to a specific angle immediately."""
     duty = angle_to_duty(angle)
     servos[servo_num].duty(duty)
-    current_pos[servo_num] = angle
     smooth_pos[servo_num] = float(angle)
 
 def minimum_jerk(t):
-    """Minimum jerk trajectory: smooth human-like motion"""
-    return 10 * (t ** 3) - 15 * (t ** 4) + 6 * (t ** 5)
+    """Calculates a smooth, human-like motion profile."""
+    t2 = t * t
+    t3 = t2 * t
+    return 10 * t3 - 15 * t3 * t + 6 * t3 * t2
+
+# --- NEW: State Machine Core Function ---
+
+def move_servos_to(targets, duration):
+    """
+    Moves servos to target positions over a specified duration.
+    This is a BLOCKING function. It will not return until the move is complete.
+    `targets` is a dictionary like {0: 90, 1: 45}
+    """
+    global smooth_pos
+    
+    start_pos = {}
+    for s_num in targets.keys():
+        start_pos[s_num] = smooth_pos[s_num]
+    
+    steps = int(duration / 0.02) # Aim for a 50Hz update rate (20ms)
+    if steps < 1:
+        steps = 1
+        
+    for i in range(steps):
+        t = (i + 1) / steps
+        s = minimum_jerk(t)
+        for s_num, target_angle in targets.items():
+            start_angle = start_pos[s_num]
+            current_angle = start_angle + (target_angle - start_angle) * s
+            # Use a simplified, direct smoothing approach for this model
+            set_servo_direct(s_num, current_angle) 
+        time.sleep(0.02)
+        
+    # After the loop, guarantee the final position
+    for s_num, target_angle in targets.items():
+        set_servo_direct(s_num, target_angle)
+
+# --- High-Level Action Library (State Machine Actions) ---
 
 def home():
-    """Move all servos to home position"""
-    for i in range(4):
-        set_servo_direct(i, 90)
-    time.sleep(0.5)
+    print("Action: Homing arm...")
+    move_servos_to({0: 90, 1: 90, 2: 90, 3: 90}, 1.0)
+    print("Homing complete.")
 
-# Initialize to home
+def reach_forward():
+    print("Action: Reaching forward...")
+    move_servos_to({1: 30, 2: 140}, 1.5)
+    print("Reach complete.")
+
+def grip():
+    print("Action: Gripping...")
+    move_servos_to({3: 180}, 0.75)
+    time.sleep(0.5) # Extra pause for physical grip
+    print("Grip complete.")
+
+def release():
+    print("Action: Releasing...")
+    move_servos_to({3: 90}, 0.75)
+    print("Release complete.")
+    
+def lift():
+    print("Action: Lifting...")
+    move_servos_to({1: 50, 2: 120}, 1.0)
+    print("Lift complete.")
+
+# --- Initialization ---
+print("Initializing servos to home position...")
 home()
-print("Servos initialized")
+print("Initialization complete. Ready for commands.")
 '''
