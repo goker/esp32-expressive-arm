@@ -1,88 +1,52 @@
-# Siyeenove Robot Arm Controller
+# Robot Arm Controller
 
-Smooth servo control for a 4-axis robot arm using ESP32-C3 and MicroPython.
+Smooth servo control for a 4-axis robot arm using ESP32-C3 and MicroPython, with AI-powered natural language control.
 
-## Table of Contents
+## Quick Start
 
-- [Quick Start](#complete-setup-guide-copy-paste-ready)
-- [Architecture](#whats-actually-happening-architecture)
-- [Hardware](#hardware-required)
-- [Demos](#step-8-run-a-demo)
-- [Chicken Pickup Demo (Advanced)](#chicken-pickup-demo-advanced)
-- [Troubleshooting](#troubleshooting)
-- [Project Structure](#project-files)
-- [Additional Documentation](#additional-documentation)
+```bash
+# Clone and setup
+cd servo-poc
+python3 -m venv .venv
+source .venv/bin/activate
+pip install mpremote esptool pyyaml flask requests
 
----
+# Flash MicroPython firmware (one-time setup)
+bash setup.sh
 
-## What's Actually Happening? (Architecture)
-
-This project uses a **two-layer architecture** - code runs on BOTH your Mac and the ESP32:
-
-```
-┌─────────────────────────────────────┐
-│  YOUR MAC (Python 3)                │
-│  - Runs Python scripts              │
-│  - Contains MicroPython code        │
-│  - Uses mpremote to send commands   │
-└──────────────┬──────────────────────┘
-               │ USB Serial Cable
-               │ (mpremote talks to ESP32)
-               ▼
-┌─────────────────────────────────────┐
-│  ESP32-C3 (MicroPython Firmware)    │
-│  - Receives code from Mac           │
-│  - Executes code in real-time       │
-│  - Controls servos via PWM          │
-└──────────────┬──────────────────────┘
-               │ GPIO pins 4,5,6,7
-               ▼
-          4x Servo Motors
+# Run a demo
+python3 demos/01_test_servos.py
 ```
 
-### Are We Flashing Firmware Each Time?
+## What This Does
 
-**NO!** Here's what happens:
+This project lets you control a 4-servo robot arm in three ways:
 
-1. **ONE TIME SETUP** (`setup.sh`): Flash MicroPython firmware onto ESP32
-   - This installs a tiny Python operating system on the chip
-   - You only do this once (or when you want to update MicroPython)
+1. **Basic Demos** - Pre-programmed motions (`demos/` folder)
+2. **Web Calibration** - Interactive web UI to calibrate and test servos (`chicken/calibrator_web.py`)
+3. **AI Control** - Natural language commands via Rust CLI (`robot-arm-rust/` - experimental)
 
-2. **EVERY TIME YOU RUN A SCRIPT**:
-   - Your Mac runs a Python script (e.g., `python3 01_test_servos.py`)
-   - The script contains MicroPython code stored as a string
-   - `mpremote` sends that code over USB to the ESP32
-   - The ESP32 (which already has MicroPython) executes it immediately
-   - The servos move in real-time
+## Architecture
 
-**Think of it like this:**
-- **Your Mac** = TV remote (sends commands)
-- **ESP32-C3** = Smart TV (receives and executes commands)
-- **MicroPython firmware** = The TV's operating system (installed once)
-- **mpremote** = The infrared signal (communication channel)
+```
+Your Computer (Python)
+  ↓ USB Serial (mpremote)
+ESP32-C3 (MicroPython)
+  ↓ GPIO 4,5,6,7 (PWM)
+4 Servo Motors
+```
 
-### Why This Approach?
+**One-time setup:** Flash MicroPython firmware to ESP32
+**Every run:** Python script sends MicroPython code via USB, ESP32 executes it immediately
 
-**Pros:**
-- ✅ Fast development - edit on Mac, run instantly
-- ✅ No compilation needed
-- ✅ Easy debugging with print statements
-- ✅ Use your favorite Mac tools (VSCode, git, etc.)
+No compilation. No reflashing. Just edit and run.
 
-**Cons:**
-- ❌ Must stay plugged in via USB (unless you use WiFi mode)
-- ❌ Can't run standalone without computer
+## Hardware
 
----
-
-## Hardware Required
-
-- ESP32-C3 development board (Siyeenove kit)
-- 4 servo motors (included in kit)
-- USB-C cable (must support data transfer, not charge-only)
-- The robot arm assembled per kit instructions
-
-### Wiring (already done if using Siyeenove kit)
+- ESP32-C3 development board
+- 4 servo motors wired to GPIO pins 4, 5, 6, 7
+- USB-C cable (must support data, not just charging)
+- 5V power for servos (battery or external supply)
 
 | Servo    | GPIO | Function   |
 |----------|------|------------|
@@ -91,351 +55,214 @@ This project uses a **two-layer architecture** - code runs on BOTH your Mac and 
 | Elbow    | 6    | Bend       |
 | Gripper  | 7    | Open/Close |
 
----
-
-## Complete Setup Guide (Copy-Paste Ready)
-
-### Step 1: Open Terminal
-
-Press `Cmd + Space`, type `Terminal`, press Enter.
-
-### Step 2: Navigate to Project
-
-```bash
-cd ~/repos/robotics/meow
-```
-
-(Or wherever you put this folder)
-
-### Step 3: Create Python Virtual Environment
-
-```bash
-python3 -m venv venv
-```
-
-### Step 4: Activate Virtual Environment
-
-```bash
-source venv/bin/activate
-```
-
-You should see `(venv)` at the start of your terminal prompt.
-
-### Step 5: Install Python Dependencies
-
-```bash
-pip install esptool mpremote
-```
-
-### Step 6: Plug In the Robot
-
-1. Connect ESP32-C3 to your Mac via USB-C cable
-2. Turn ON the robot's power switch (if it has one)
-3. Wait 2 seconds
-
-### Step 7: Flash MicroPython Firmware
-
-```bash
-bash setup.sh
-```
-
-This downloads and flashes MicroPython to the ESP32. Takes about 30 seconds.
-
-**If it fails with "Connecting...":**
-1. Hold the **BOOT** button on the ESP32
-2. Run the command again
-3. Release BOOT after you see "Writing at 0x..."
-
-### Step 8: Run a Demo!
+## Basic Demos
 
 ```bash
 cd demos
-python3 01_test_servos.py
+python3 01_test_servos.py      # Test each servo individually
+python3 02_arm_circles.py      # Circular shoulder+elbow motion
+python3 03_base_rotation.py    # Smooth base rotation with accel/decel
+python3 04_gripper_moves.py    # Gripper actions (snap, grab, release)
+python3 05_wave_motion.py      # Wave across all joints
+python3 run_all.py             # Run all demos in sequence
 ```
 
-Or run all demos in sequence:
-```bash
-cd demos
-python3 run_all.py
-```
+All demos use **minimum jerk trajectories** for smooth, human-like motion.
 
-**Available demos:**
-| Demo | Description |
-|------|-------------|
-| `01_test_servos.py` | Test each servo individually |
-| `02_arm_circles.py` | Shoulder + elbow trace circles |
-| `03_base_rotation.py` | Dramatic accel/decel sweeps |
-| `04_gripper_moves.py` | Snap, grab, pulse, release |
-| `05_wave_motion.py` | Flowing wave across all axes |
-| `run_all.py` | Run all demos in sequence |
+## Web Calibration Tool
 
----
-
-## Chicken Pickup Demo (Advanced)
-
-A precision object pickup demo with YAML-based motion sequences and web-based calibration.
-
-### Web-Based Calibrator (NEW!)
-
-Interactive web tool to calibrate servo limits and test positions:
+Interactive web interface for servo calibration and testing:
 
 ```bash
 cd chicken
-python calibrator_web.py
+python3 calibrator_web.py
+# Open http://localhost:3001
 ```
-
-Then open: **http://localhost:3001**
 
 **Features:**
-- 🎮 **Live servo control** with coarse/fine adjustment buttons
-- 📊 **4-panel visualization** showing each servo's position
-- 🎯 **Min/Default/Max calibration** for safe operation
-- 🛑 **Emergency stop** button (smooth 3-second return to defaults)
-- 💾 **Save calibration** to `calibration_limits.json`
-- ⚡ **Debounced updates** - no jerky movements or gripper pinching
+- Live servo control with coarse/fine adjustments
+- Set min/max/default positions for each servo
+- Emergency stop (smooth return to safe position)
+- Save calibration to `calibration_limits.json`
+- Real-time position visualization
 
-### Test Your Calibration
-
+Alternative semantic calibrator:
 ```bash
-# Quick test - move all servos to home position
-python test_calibration.py home
-
-# Full test - each servo through min→default→max
-python test_calibration.py test
+python3 calibrator_semantic.py
+# Open http://localhost:3002
 ```
 
-### Run Pickup Sequence
+Uses intuitive position names instead of angles (e.g., "arm extended" vs "90 degrees").
 
-YAML-driven motion sequences (edit `correct_sequence.yaml`):
+## Workflow System
 
-```bash
-python main.py 01    # Lower arm for placement
-# <-- Place object here
-python main.py 02    # Return to baseline
-python main.py 03    # Pick up object (3 waypoints)
-python main.py 04    # Drop object
-python main.py 00    # Emergency stop
-```
-
-**Architecture:**
-- ✅ YAML-based motion sequences (`correct_sequence.yaml`)
-- ✅ Separate MicroPython template (`micropython_runner.py`)
-- ✅ Clean separation: config vs code vs orchestration
-- ✅ Servo calibration with min/max/default limits
-- ✅ Smooth minimum-jerk trajectories
-
-**[→ Complete Chicken Demo Documentation](chicken/README.md)**
-
----
-
-## Quick Reference (After Initial Setup)
-
-Every time you open a new terminal:
+Create multi-step motion sequences using the workflow designer:
 
 ```bash
-cd ~/repos/robotics/meow
-source venv/bin/activate
-cd demos
-python3 02_arm_circles.py   # or any demo
+cd chicken
+python3 workflow_designer.py
+# Open http://localhost:3000
 ```
 
----
+1. Move servos to desired position
+2. Click "Add Step" to save position
+3. Build sequence of steps
+4. Save workflow to JSON
+5. Execute with: `python3 chicken.py workflow_name.json`
 
-## Other Commands
+**See:** `chicken/WORKFLOW_DESIGNER.md` for full documentation
 
-### Factory Reset ESP32
+## AI Control (Experimental)
+
+Natural language robot control using Gemini AI:
+
 ```bash
-bash wipe.sh
-```
-Erases everything. Run `bash setup.sh` again after.
-
----
-
-## Troubleshooting
-
-### "No USB serial port found"
-```bash
-# Check if device is connected:
-ls /dev/cu.usb*
-```
-- If nothing shows: try different USB cable or port
-- If something shows: close any other program using the port (Arduino IDE, screen, etc.)
-
-### "Failed to connect" or stuck at "Connecting..."
-1. Hold **BOOT** button on ESP32
-2. Run your command
-3. Release BOOT when upload starts
-
-### Servos don't move but code runs
-1. Check power - servos need 5V (battery or external supply)
-2. Run diagnostic: `python3 examples/test.py`
-3. Check wiring to GPIO 4, 5, 6, 7
-
-### "Permission denied" on serial port
-```bash
-# Usually not needed on macOS, but try:
-sudo chmod 666 /dev/cu.usbserial-*
+cd robot-arm-rust
+cargo run -- do "pick up the object"
+cargo run -- listen   # Voice input via OpenAI Whisper
 ```
 
-### Need to reflash everything
-```bash
-bash wipe.sh
-bash setup.sh
-```
+The Rust CLI:
+- Takes natural language commands
+- Generates MicroPython code via Gemini API
+- Executes code on ESP32
+- Supports voice input
 
----
+**See:** `robot-arm-rust/README.md` for setup
 
-## Project Files
+## Project Structure
 
 ```
 servo-poc/
-├── demos/                       # Motion demos
-│   ├── utils.py                 # Shared utilities
-│   ├── 01_test_servos.py        # Test each servo
-│   ├── 02_arm_circles.py        # Arm circle motion
-│   ├── 03_base_rotation.py      # Base accel/decel
-│   ├── 04_gripper_moves.py      # Gripper actions
-│   ├── 05_wave_motion.py        # Wave across all axes
-│   └── run_all.py               # Run all demos
-├── chicken/                     # Object pickup demo (advanced)
-│   ├── main.py                  # Unified pickup script
-│   ├── servo_utils.py           # Calibration & speed control
-│   ├── servo_config.json        # Generated by calibrator
-│   ├── __calibrator_simple.py   # Calibration wizard
-│   ├── 00_red_button.py         # Emergency stop
-│   └── README.md                # Chicken demo docs
-├── examples/                    # Quick test scripts
-│   ├── test.py                  # Full connection test
-│   ├── simple.py                # Minimal servo test
-│   └── led.py                   # LED blink test
-├── docs/                        # Documentation
-│   ├── PORTING_GUIDE.md         # General porting guide
-│   └── COMPREHENSIVE_PORTING_GUIDE.md  # Detailed porting info
-├── robot-arm-rust/              # Rust port (experimental)
-├── legacy/                      # Older versions (not tracked)
-├── archive/                     # Archived code (not tracked)
-├── setup.sh                     # First-time MicroPython setup
-├── wipe.sh                      # Factory reset ESP32
-├── requirements.txt             # Python dependencies
-├── CLAUDE.md                    # Claude-specific guidelines
-├── README.md                    # This file
-└── .venv/                       # Virtual environment (you create this)
+├── demos/                    # Basic motion demos
+│   ├── utils.py             # Shared MicroPython code
+│   ├── 01_test_servos.py    # Individual servo tests
+│   ├── 02-05_*.py           # Motion demos
+│   └── run_all.py           # Run all demos
+│
+├── chicken/                  # Advanced control & calibration
+│   ├── calibrator_web.py    # Web-based calibrator
+│   ├── calibrator_semantic.py   # Semantic position calibrator
+│   ├── workflow_designer.py     # Workflow creation tool
+│   ├── chicken.py           # Workflow executor
+│   ├── main.py              # YAML-based pickup sequences
+│   ├── calibration_limits.json  # Servo calibration data
+│   ├── servo_config.json    # Servo configuration
+│   ├── templates/           # HTML templates for web UIs
+│   ├── workflows/           # Saved workflow JSON files
+│   └── README.md            # Detailed chicken docs
+│
+├── robot-arm-rust/          # AI-powered CLI (Rust)
+│   ├── src/main.rs         # Gemini API integration
+│   └── README.md           # Setup instructions
+│
+├── examples/                # Quick diagnostic scripts
+│   ├── test.py             # Full connection test
+│   ├── simple.py           # Minimal servo test
+│   └── led.py              # LED blink test
+│
+├── ai/                      # AI agent instructions
+│   └── AGENT_INSTRUCTIONS.md
+│
+├── setup.sh                 # Flash MicroPython firmware
+└── wipe.sh                  # Factory reset ESP32
 ```
 
----
-
-## How It Works: Step-by-Step Example
-
-Let's trace what happens when you run `python3 01_test_servos.py`:
-
-1. **Your Mac's Python** reads the script
-2. Script finds the USB port (e.g., `/dev/cu.usbserial-1234`)
-3. Script has MicroPython code stored in a `CODE` variable (it's just a big string)
-4. Script calls: `mpremote connect /dev/cu.usbserial-1234 exec <CODE>`
-5. **mpremote** sends that code over USB serial to the ESP32
-6. **ESP32's MicroPython** receives and executes the code line by line
-7. Code sets up PWM on GPIO pins 4, 5, 6, 7
-8. Code moves servos by changing PWM duty cycles
-9. Servos respond in real-time
-
-**Key insight:** The Python script on your Mac is like a "code delivery system" - it packages up MicroPython code and ships it to the ESP32 for execution.
-
-### Two Python Environments
-
-This is the confusing part - there are **two different Pythons** at work:
-
-| Where | What | Version | Purpose |
-|-------|------|---------|---------|
-| **Your Mac** | CPython | 3.x | Find USB port, send code via mpremote |
-| **ESP32** | MicroPython | 1.x | Execute code, control hardware |
-
-When you see this in a script:
-```python
-CODE = '''
-from machine import Pin, PWM  # This is MicroPython code!
-servo = PWM(Pin(4), freq=50)
-'''
-
-subprocess.run(["mpremote", "exec", CODE])  # This is Mac Python code!
-```
-
-The outer code runs on your Mac. The inner `CODE` string runs on the ESP32.
-
----
-
-## Math & Motion Algorithms
+## Motion Algorithms
 
 ### Minimum Jerk Trajectory
-The robot uses a mathematical formula that mimics human arm movement:
+Smooth, human-like motion using quintic polynomial:
 ```
-position = 10t³ - 15t⁴ + 6t⁵
+s(t) = 10t³ - 15t⁴ + 6t⁵
 ```
-This creates smooth acceleration and deceleration - no jerky stops.
 
-### Anti-Jitter Smoothing
-Cheap servos jitter. We fix this with exponential smoothing:
+### Exponential Smoothing
+Reduces servo jitter:
 ```
-smooth_position = old_position × 0.5 + new_position × 0.5
+smooth_pos = old_pos × 0.5 + new_pos × 0.5
 ```
-Only updates the servo when the value actually changes.
 
----
+### Safety Watchdog
+Automatically detaches servos after 10 seconds of inactivity to prevent overheating.
 
-## One-Liner Setup (For the Impatient)
+## Troubleshooting
 
+**No USB device found:**
 ```bash
-cd ~/repos/robotics/meow && python3 -m venv venv && source venv/bin/activate && pip install esptool mpremote && bash setup.sh && cd demos && python3 run_all.py
+ls /dev/cu.usb*  # Check if device is visible
+```
+- Try different USB cable or port
+- Close other programs using the port
+
+**Stuck at "Connecting...":**
+1. Hold BOOT button on ESP32
+2. Run command
+3. Release BOOT when upload starts
+
+**Servos don't move:**
+- Check 5V power supply to servos
+- Verify wiring to GPIO 4, 5, 6, 7
+- Run `python3 examples/test.py`
+
+**Factory reset:**
+```bash
+bash wipe.sh      # Erase everything
+bash setup.sh     # Reflash MicroPython
 ```
 
----
+## Development
 
-## FAQ / Common Confusion
+**Dependencies:**
+```bash
+pip install mpremote esptool pyyaml flask requests
+```
 
-### Q: "Do I need to flash firmware every time I run a script?"
-**A:** NO! You only flash MicroPython firmware once (using `setup.sh`). After that, scripts just send code to the already-running MicroPython.
+**Project guidelines:** See `CLAUDE.md` for code style
 
-### Q: "Can the robot work without my computer?"
-**A:** Not by default. But you can upload code to run on boot:
+**Virtual environment:**
+```bash
+source .venv/bin/activate   # Activate
+deactivate                   # Deactivate when done
+```
+
+## How It Works
+
+When you run a Python script:
+
+1. Mac Python reads the script
+2. Script contains MicroPython code as a string
+3. `mpremote` sends code over USB to ESP32
+4. ESP32 executes code in real-time
+5. Servos respond immediately
+
+**Two Pythons:**
+- **Mac:** CPython 3.x - sends code, finds USB port
+- **ESP32:** MicroPython 1.x - runs on chip, controls hardware
+
+MicroPython is flashed **once**. After that, you just send code.
+
+## Advanced Usage
+
+**Run code on boot (standalone mode):**
 ```bash
 mpremote fs cp my_script.py :main.py
 mpremote reset
 ```
-Now it runs standalone! Power it with a battery and it's independent.
+Now the robot runs independently with battery power.
 
-### Q: "What's the difference between flashing and running?"
-- **Flashing** = Installing the MicroPython OS (one-time, uses `setup.sh`)
-- **Running** = Sending Python code to execute (every time, uses `mpremote`)
-
-### Q: "Why two Python versions?"
-Because MicroPython is tiny (fits on a chip with 4MB) while regular Python needs gigabytes. Your Mac ships code, ESP32 runs it.
-
----
-
-## Deactivate Virtual Environment
-
-When you're done:
+**Interactive REPL:**
 ```bash
-deactivate
+mpremote connect /dev/cu.usbserial-1140
+# Now you can type MicroPython commands directly
 ```
 
----
+## Documentation
 
-## Additional Documentation
-
-- **[Chicken Pickup Demo Guide](chicken/README.md)** - Advanced object manipulation with calibration
-- **[General Porting Guide](docs/PORTING_GUIDE.md)** - Tips for porting to other platforms
-- **[Comprehensive Porting Guide](docs/COMPREHENSIVE_PORTING_GUIDE.md)** - Detailed technical porting information
-- **[Rust Port](robot-arm-rust/README.md)** - Experimental Rust implementation
-
-### Quick Test Scripts
-
-The `examples/` folder contains simple diagnostic scripts:
-- **`test.py`** - Full connection and servo movement test
-- **`simple.py`** - Minimal servo positioning test
-- **`led.py`** - Onboard LED blink test
-
----
+- **[Chicken/Workflow System](chicken/README.md)** - Advanced workflows and calibration
+- **[Workflow Designer](chicken/WORKFLOW_DESIGNER.md)** - Creating motion sequences
+- **[Semantic Calibration](chicken/SEMANTIC_CALIBRATION.md)** - Intuitive position naming
+- **[Rust AI CLI](robot-arm-rust/README.md)** - Natural language control
 
 ## License
 
-MIT - Do whatever you want with it.
+MIT
