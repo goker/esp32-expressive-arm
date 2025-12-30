@@ -69,6 +69,8 @@ python3 run_all.py             # Run all demos in sequence
 
 All demos use **minimum jerk trajectories** for smooth, human-like motion.
 
+**Note:** Some older demos in the `demos/` folder that use the `set_servo()` API are broken and won't be fixed. They represent an outdated approach to movement control. Use the demos listed above or the workflow system in `chicken/` for current functionality.
+
 ## Web Calibration Tool
 
 Interactive web interface for servo calibration and testing:
