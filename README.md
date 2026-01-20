@@ -95,7 +95,7 @@ You: "Greet my friend who just arrived"
 
 ### Robot Arm Kit ($40-60)
 
-**🏆 Recommended:** [SIYEENOVE Smart Robot Arm for ESP32-C3](https://www.amazon.com/SIYEENOVE-Building-Joystick-Children-Educational/dp/B0DKWJ14WW)
+**🏆 Recommended:** [SIYEENOVE Smart Robot Arm for ESP32-C3](https://www.amazon.com/dp/B0DKWJ14WW)
 
 | What's Included | Notes |
 |-----------------|-------|
