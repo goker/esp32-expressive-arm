@@ -29,3 +29,4 @@ ENV/
 # Archive and legacy (old/deprecated code)
 archive/
 legacy/
+.env
