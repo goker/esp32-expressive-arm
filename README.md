@@ -1,176 +1,352 @@
-# Robot Arm Controller
+# ESP32 Expressive Robot Arm 🤖✨
 
-Smooth servo control for a 4-axis robot arm using ESP32-C3 and MicroPython, with AI-powered natural language control.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![MicroPython](https://img.shields.io/badge/MicroPython-ESP32--C3-green.svg)](https://micropython.org/)
+[![Gemini AI](https://img.shields.io/badge/Gemini-2.0--Flash-orange.svg)](https://ai.google.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **Give your robot arm emotions and personality with AI-powered expressive gestures**
+
+Transform a simple $40 robot arm into an **expressive companion** that waves, salutes, dances, shows emotions, and responds to natural language commands using Google's Gemini AI.
+
+<p align="center">
+  <img src="assets/hero-banner.svg" alt="ESP32 Expressive Robot Arm with AI" width="800"/>
+</p>
+
+---
+
+## What Makes This Different
+
+| Traditional Robot Arms | This Expressive Arm |
+|------------------------|---------------------|
+| Moves point to point | Moves with **emotion and personality** |
+| Programmed sequences | **Natural language** commands |
+| Mechanical feeling | **Smooth, human-like** motion |
+| Single purpose | **20+ expressive gestures** |
+
+<p align="center">
+  <img src="assets/emotion-grid.png" alt="Robot arm expressing different emotions" width="700"/>
+</p>
+
+---
+
+## Demo
+
+```bash
+# Tell it what to express in plain English
+python expressive/gemini_expressive.py "Wave hello enthusiastically"
+
+# It understands context and emotions
+python expressive/gemini_expressive.py "Show that you're thinking hard"
+
+# Chain multiple expressions
+python expressive/gemini_expressive.py "React surprised, then celebrate"
+```
+
+**Example Session:**
+```
+You: "Greet my friend who just arrived"
+
+Interpretation: Friendly greeting - warm and welcoming
+Gestures: [wave_friendly]
+
+Executing on /dev/cu.usbserial-110...
+Gesture: wave_friendly (Friendly wave to greet someone)
+=== Sequence complete! ===
+```
+
+---
+
+## Hardware Requirements
+
+### Robot Arm Kit ($40-60)
+
+**Recommended:** [SIYEENOVE Smart Robot Arm for ESP32-C3](https://www.amazon.com/SIYEENOVE-Building-Joystick-Children-Educational/dp/B0DKWJ14WW)
+
+| What's Included | Notes |
+|-----------------|-------|
+| ESP32-C3 microcontroller | Pre-programmed, WiFi capable |
+| 4x MG90S servo motors | Base, shoulder, elbow, gripper |
+| 4-DOF acrylic arm structure | Easy 2-3 hour assembly |
+| Dual joystick controller | For manual control |
+| Gripper/claw mechanism | Pick up light objects |
+| All cables and hardware | Complete kit |
+
+**Alternative Options:**
+- [ACEBOTT 4 DOF ESP32 Robotic Arm](https://www.amazon.com/ACEBOTT-Programmable-Compatible-Educational-Teenagers/dp/B0DGTH4N43)
+- [KEYESTUDIO Robot Arm Starter Kit](https://www.amazon.com/KEYESTUDIO-Arduino-Electronic-Robotics-Bluetooth/dp/B08B8GJSH9)
+
+**You'll Also Need:**
+- USB-C data cable (not charge-only)
+- 2x 18650 batteries OR 5V power supply
+- Computer with Python 3.8+
+- [Gemini API key](https://aistudio.google.com/app/apikey) (free)
+
+<p align="center">
+  <img src="assets/hardware-diagram.png" alt="Hardware setup and wiring diagram" width="600"/>
+</p>
+
+---
 
 ## Quick Start
 
+### 1. Clone & Setup
+
 ```bash
-# Clone and setup
-cd servo-poc
+git clone https://github.com/goker/esp32-expressive-arm.git
+cd esp32-expressive-arm
+
+# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-pip install mpremote esptool pyyaml flask requests
 
-# Flash MicroPython firmware (one-time setup)
+# Install dependencies
+pip install -r requirements.txt
+
+# Flash MicroPython firmware (first time only)
 bash setup.sh
-
-# Run a demo
-python3 demos/01_test_servos.py
 ```
 
-## What This Does
+### 2. Get Your Gemini API Key
 
-This project lets you control a 4-servo robot arm in three ways:
-
-1. **Basic Demos** - Pre-programmed motions (`demos/` folder)
-2. **Web Calibration** - Interactive web UI to calibrate and test servos (`chicken/calibrator_web.py`)
-3. **AI Control** - Natural language commands via Rust CLI (`robot-arm-rust/` - experimental)
-
-## Architecture
-
-```
-Your Computer (Python)
-  ↓ USB Serial (mpremote)
-ESP32-C3 (MicroPython)
-  ↓ GPIO 4,5,6,7 (PWM)
-4 Servo Motors
-```
-
-**One-time setup:** Flash MicroPython firmware to ESP32
-**Every run:** Python script sends MicroPython code via USB, ESP32 executes it immediately
-
-No compilation. No reflashing. Just edit and run.
-
-## Hardware
-
-- ESP32-C3 development board
-- 4 servo motors wired to GPIO pins 4, 5, 6, 7
-- USB-C cable (must support data, not just charging)
-- 5V power for servos (battery or external supply)
-
-| Servo    | GPIO | Function   |
-|----------|------|------------|
-| Base     | 4    | Rotation   |
-| Shoulder | 5    | Up/Down    |
-| Elbow    | 6    | Bend       |
-| Gripper  | 7    | Open/Close |
-
-## Basic Demos
+1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Click "Create API Key" (free tier available)
+3. Set it in your terminal:
 
 ```bash
-cd demos
-python3 01_test_servos.py      # Test each servo individually
-python3 02_arm_circles.py      # Circular shoulder+elbow motion
-python3 03_base_rotation.py    # Smooth base rotation with accel/decel
-python3 04_gripper_moves.py    # Gripper actions (snap, grab, release)
-python3 05_wave_motion.py      # Wave across all joints
-python3 run_all.py             # Run all demos in sequence
+export GEMINI_API_KEY="your-api-key-here"
 ```
 
-All demos use **minimum jerk trajectories** for smooth, human-like motion.
-
-**Note:** Some older demos in the `demos/` folder that use the `set_servo()` API are broken and won't be fixed. They represent an outdated approach to movement control. Use the demos listed above or the workflow system in `chicken/` for current functionality.
-
-## Web Calibration Tool
-
-Interactive web interface for servo calibration and testing:
+### 3. Connect & Test
 
 ```bash
-cd chicken
-python3 calibrator_web.py
-# Open http://localhost:3001
+# Verify connection
+python smoketest.py
+
+# Test servos
+python demos/01_test_servos.py
 ```
 
-**Features:**
-- Live servo control with coarse/fine adjustments
-- Set min/max/default positions for each servo
-- Emergency stop (smooth return to safe position)
-- Save calibration to `calibration_limits.json`
-- Real-time position visualization
-
-Alternative semantic calibrator:
-```bash
-python3 calibrator_semantic.py
-# Open http://localhost:3002
-```
-
-Uses intuitive position names instead of angles (e.g., "arm extended" vs "90 degrees").
-
-## Workflow System
-
-Create multi-step motion sequences using the workflow designer:
+### 4. Start Expressing!
 
 ```bash
-cd chicken
-python3 workflow_designer.py
-# Open http://localhost:3000
+# Interactive mode - have a conversation
+python expressive/gemini_expressive.py
+
+# Single command
+python expressive/gemini_expressive.py "Do a victory dance"
 ```
 
-1. Move servos to desired position
-2. Click "Add Step" to save position
-3. Build sequence of steps
-4. Save workflow to JSON
-5. Execute with: `python3 chicken.py workflow_name.json`
+---
 
-**See:** `chicken/WORKFLOW_DESIGNER.md` for full documentation
+## Available Gestures
 
-## AI Control (Experimental)
+### Greetings & Social
 
-Natural language robot control using Gemini AI:
+| Gesture | Command | Description |
+|---------|---------|-------------|
+| `wave_friendly` | "Wave hello" | Friendly wave greeting |
+| `wave_excited` | "Wave enthusiastically" | Excited, energetic wave |
+| `salute` | "Salute" | Respectful military salute |
+| `bow` | "Take a bow" | Formal bow |
+| `beckoning` | "Come here gesture" | Inviting motion |
 
-```bash
-cd robot-arm-rust
-cargo run -- do "pick up the object"
-cargo run -- listen   # Voice input via OpenAI Whisper
+### Emotional Expressions
+
+| Gesture | Emotion | Description |
+|---------|---------|-------------|
+| `excited_bounce` | Happy | Bouncing up and down |
+| `celebrate` | Joy | Victory arm pump |
+| `sad_droop` | Sad | Drooping posture |
+| `surprised` | Surprise | Startled reaction |
+| `angry_shake` | Anger | Fist shaking |
+| `shy_retreat` | Shy | Retreating motion |
+| `curious_look` | Curious | Examining something |
+| `tired_stretch` | Tired | Stretching motion |
+
+### Communication
+
+| Gesture | Meaning | Description |
+|---------|---------|-------------|
+| `nod_yes` | Yes | Nodding agreement |
+| `shake_no` | No | Shaking disagreement |
+| `shrug` | Uncertain | "I don't know" |
+| `point_forward` | Look there | Pointing gesture |
+| `thinking` | Contemplating | Thoughtful pose |
+
+### Fun
+
+| Gesture | Description |
+|---------|-------------|
+| `dance_groove` | Fun dancing motion |
+
+<p align="center">
+  <img src="assets/gesture-showcase.png" alt="All available gestures demonstrated" width="800"/>
+</p>
+
+---
+
+## How It Works
+
+```
+┌────────────────────────────────────────────────────────┐
+│  "Wave hello and show you're happy"                    │
+└───────────────────────┬────────────────────────────────┘
+                        │
+                        ▼
+┌────────────────────────────────────────────────────────┐
+│                   GEMINI AI                            │
+│  • Understands natural language intent                 │
+│  • Detects emotional context                           │
+│  • Selects appropriate gestures                        │
+│  • Adjusts speed/intensity for emotion                 │
+└───────────────────────┬────────────────────────────────┘
+                        │
+                        ▼
+┌────────────────────────────────────────────────────────┐
+│              GESTURE LIBRARY                           │
+│  • 20+ parameterized emotional gestures                │
+│  • Keyframe-based motion sequences                     │
+│  • Speed and amplitude modulation                      │
+└───────────────────────┬────────────────────────────────┘
+                        │
+                        ▼
+┌────────────────────────────────────────────────────────┐
+│             MOTION GENERATOR                           │
+│  • Minimum jerk trajectories (smooth motion)           │
+│  • Exponential smoothing (no jitter)                   │
+│  • 50Hz real-time control                              │
+└───────────────────────┬────────────────────────────────┘
+                        │
+                        ▼
+┌────────────────────────────────────────────────────────┐
+│           ESP32-C3 + SERVOS                            │
+│  • MicroPython real-time execution                     │
+│  • PWM servo control on GPIO 4,5,6,7                   │
+│  • Auto-detach safety (10s timeout)                    │
+└────────────────────────────────────────────────────────┘
 ```
 
-The Rust CLI:
-- Takes natural language commands
-- Generates MicroPython code via Gemini API
-- Executes code on ESP32
-- Supports voice input
-
-**See:** `robot-arm-rust/README.md` for setup
+---
 
 ## Project Structure
 
 ```
-servo-poc/
-├── demos/                    # Basic motion demos
-│   ├── utils.py             # Shared MicroPython code
-│   ├── 01_test_servos.py    # Individual servo tests
-│   ├── 02-05_*.py           # Motion demos
-│   └── run_all.py           # Run all demos
+esp32-expressive-arm/
 │
-├── chicken/                  # Advanced control & calibration
-│   ├── calibrator_web.py    # Web-based calibrator
-│   ├── calibrator_semantic.py   # Semantic position calibrator
-│   ├── workflow_designer.py     # Workflow creation tool
-│   ├── chicken.py           # Workflow executor
-│   ├── main.py              # YAML-based pickup sequences
-│   ├── calibration_limits.json  # Servo calibration data
-│   ├── servo_config.json    # Servo configuration
-│   ├── templates/           # HTML templates for web UIs
-│   ├── workflows/           # Saved workflow JSON files
-│   └── README.md            # Detailed chicken docs
+├── expressive/                    # AI-POWERED EXPRESSION SYSTEM
+│   ├── gestures.py               # 20+ emotional gesture definitions
+│   ├── gemini_expressive.py      # Natural language → gestures
+│   └── __init__.py
 │
-├── robot-arm-rust/          # AI-powered CLI (Rust)
-│   ├── src/main.rs         # Gemini API integration
-│   └── README.md           # Setup instructions
+├── demos/                         # Example movement patterns
+│   ├── utils.py                  # Shared MicroPython code
+│   ├── 01_test_servos.py         # Basic servo test
+│   ├── 05_wave_motion.py         # Wave demo
+│   └── ...                       # AI-generated demos
 │
-├── examples/                # Quick diagnostic scripts
-│   ├── test.py             # Full connection test
-│   ├── simple.py           # Minimal servo test
-│   └── led.py              # LED blink test
+├── chicken/                       # Workflow & calibration system
+│   ├── calibrator_web.py         # Web-based servo calibration
+│   ├── workflow_designer.py      # Create motion sequences
+│   └── chicken.py                # Execute JSON workflows
 │
-├── ai/                      # AI agent instructions
-│   └── AGENT_INSTRUCTIONS.md
+├── ai/                           # Original Gemini integration
+│   └── AGENT_INSTRUCTIONS.md     # AI agent prompts
 │
-├── setup.sh                 # Flash MicroPython firmware
-└── wipe.sh                  # Factory reset ESP32
+├── robot-arm-rust/               # Rust CLI (experimental)
+│   └── src/main.rs               # Voice + Gemini control
+│
+├── assets/                       # Images and media
+├── setup.sh                      # One-click firmware flash
+├── smoketest.py                  # Connection test
+└── requirements.txt              # Python dependencies
 ```
 
-## Motion Algorithms
+---
+
+## Advanced Usage
+
+### Interactive Conversation Mode
+
+```bash
+python expressive/gemini_expressive.py
+```
+
+```
+Expressive Robot Arm - Interactive Mode
+
+Tell me what to express! Examples:
+  - 'Wave hello to everyone'
+  - 'Show that you're thinking hard'
+  - 'React surprised then happy'
+  - 'Do a little dance'
+
+Type 'quit' to exit, 'list' to see gestures
+
+You: show me all the emotions you can express
+```
+
+### Programmatic Control
+
+```python
+from expressive.gemini_expressive import express
+from expressive.gestures import get_gesture
+
+# AI-interpreted expression
+result = express("Show curiosity about something on the table")
+print(result['interpretation'])
+print(result['gestures'])
+
+# Direct gesture control
+wave = get_gesture("wave_friendly", speed=1.5, amplitude=1.2)
+```
+
+### Create Custom Gestures
+
+```python
+from expressive.gestures import Gesture, Keyframe, Emotion
+
+def my_custom_wave():
+    return Gesture(
+        name="custom_wave",
+        description="My personalized wave",
+        keyframes=[
+            Keyframe(base=90, shoulder=60, elbow=45, gripper=30, duration=0.4),
+            Keyframe(base=120, shoulder=60, elbow=45, gripper=30, duration=0.2),
+            Keyframe(base=60, shoulder=60, elbow=45, gripper=30, duration=0.2),
+            # Add more keyframes...
+        ],
+        emotion=Emotion.HAPPY,
+        speed_multiplier=1.0,
+        loops=2
+    )
+```
+
+### Web Calibration Tool
+
+```bash
+cd chicken
+python calibrator_web.py
+# Open http://localhost:3001
+```
+
+---
+
+## Use Cases
+
+| Application | Description |
+|-------------|-------------|
+| **Desk Companion** | Robot that reacts to your mood and greets visitors |
+| **Educational** | Teach robotics, AI, and programming concepts |
+| **Interactive Art** | Installations that respond to audiences |
+| **Content Creation** | Animated reactions for streams and videos |
+| **Accessibility** | Non-verbal communication assistance |
+| **Research** | Human-robot interaction studies |
+| **Prototyping** | Test expressive behaviors before full-scale builds |
+
+---
+
+## Motion Technology
 
 ### Minimum Jerk Trajectory
 Smooth, human-like motion using quintic polynomial:
@@ -179,92 +355,70 @@ s(t) = 10t³ - 15t⁴ + 6t⁵
 ```
 
 ### Exponential Smoothing
-Reduces servo jitter:
+Reduces servo jitter for fluid movement:
 ```
 smooth_pos = old_pos × 0.5 + new_pos × 0.5
 ```
 
-### Safety Watchdog
-Automatically detaches servos after 10 seconds of inactivity to prevent overheating.
+### Safety Features
+- Auto-detach servos after 10 seconds of inactivity
+- Smooth emergency stop returns to safe position
+- Configurable joint limits prevent damage
+
+---
 
 ## Troubleshooting
 
-**No USB device found:**
-```bash
-ls /dev/cu.usb*  # Check if device is visible
-```
-- Try different USB cable or port
-- Close other programs using the port
+| Problem | Solution |
+|---------|----------|
+| No USB device found | Try different cable/port, check `ls /dev/cu.usb*` |
+| Servos don't move | Check 5V power supply, verify GPIO wiring |
+| Gemini API error | Verify API key is set: `echo $GEMINI_API_KEY` |
+| Jerky motion | Increase SPEED_MULTIPLIER in servo_utils.py |
 
-**Stuck at "Connecting...":**
-1. Hold BOOT button on ESP32
-2. Run command
-3. Release BOOT when upload starts
-
-**Servos don't move:**
-- Check 5V power supply to servos
-- Verify wiring to GPIO 4, 5, 6, 7
-- Run `python3 examples/test.py`
-
-**Factory reset:**
+**Factory Reset:**
 ```bash
 bash wipe.sh      # Erase everything
 bash setup.sh     # Reflash MicroPython
 ```
 
-## Development
+---
 
-**Dependencies:**
-```bash
-pip install mpremote esptool pyyaml flask requests
-```
+## Contributing
 
-**Project guidelines:** See `CLAUDE.md` for code style
+Contributions welcome! Ideas:
 
-**Virtual environment:**
-```bash
-source .venv/bin/activate   # Activate
-deactivate                   # Deactivate when done
-```
+- [ ] Add more gesture definitions
+- [ ] Improve emotion detection prompts
+- [ ] Add voice input support
+- [ ] Create web interface for gestures
+- [ ] Camera input for reactive behaviors
+- [ ] Support Claude, GPT-4, Llama models
 
-## How It Works
+---
 
-When you run a Python script:
+## Credits
 
-1. Mac Python reads the script
-2. Script contains MicroPython code as a string
-3. `mpremote` sends code over USB to ESP32
-4. ESP32 executes code in real-time
-5. Servos respond immediately
+- Original servo-poc by [@jorgeajimenez](https://github.com/jorgeajimenez/servo-poc)
+- Expressive gesture system by [@goker](https://github.com/goker)
+- Powered by [Google Gemini AI](https://ai.google.dev/)
 
-**Two Pythons:**
-- **Mac:** CPython 3.x - sends code, finds USB port
-- **ESP32:** MicroPython 1.x - runs on chip, controls hardware
-
-MicroPython is flashed **once**. After that, you just send code.
-
-## Advanced Usage
-
-**Run code on boot (standalone mode):**
-```bash
-mpremote fs cp my_script.py :main.py
-mpremote reset
-```
-Now the robot runs independently with battery power.
-
-**Interactive REPL:**
-```bash
-mpremote connect /dev/cu.usbserial-1140
-# Now you can type MicroPython commands directly
-```
-
-## Documentation
-
-- **[Chicken/Workflow System](chicken/README.md)** - Advanced workflows and calibration
-- **[Workflow Designer](chicken/WORKFLOW_DESIGNER.md)** - Creating motion sequences
-- **[Semantic Calibration](chicken/SEMANTIC_CALIBRATION.md)** - Intuitive position naming
-- **[Rust AI CLI](robot-arm-rust/README.md)** - Natural language control
+---
 
 ## License
 
-MIT
+MIT License - Use freely for any project!
+
+---
+
+## Keywords
+
+`robot arm` `ESP32` `ESP32-C3` `expressive robotics` `emotional AI` `Gemini AI` `MicroPython` `robot gestures` `human-robot interaction` `DIY robotics` `servo control` `natural language robot` `AI robot` `robot emotions` `physical AI` `embodied AI` `robot companion` `interactive robot` `STEM education` `maker project` `low-cost robot` `robot arm kit` `gesture control` `emotional expression` `robot personality`
+
+---
+
+<p align="center">
+  <b>Built for expressive robotics</b>
+  <br><br>
+  <a href="https://github.com/goker/esp32-expressive-arm/stargazers">Star this repo</a> if you find it useful!
+</p>
