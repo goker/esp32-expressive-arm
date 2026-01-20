@@ -15,19 +15,6 @@ Transform a simple **$40 robot arm** into an **expressive companion** that waves
 
 ---
 
-## 🎬 See It In Action!
-
-<p align="center">
-  <img src="assets/wave-animation.gif" alt="Robot arm waving animation" width="400"/>
-</p>
-
-```bash
-# Just tell it what to do in plain English!
-python expressive/gemini_expressive.py "Wave hello enthusiastically"
-```
-
----
-
 ## 🚀 How It Works
 
 <p align="center">
