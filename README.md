@@ -10,7 +10,7 @@
 Transform a simple $40 robot arm into an **expressive companion** that waves, salutes, dances, shows emotions, and responds to natural language commands using Google's Gemini AI.
 
 <p align="center">
-  <img src="assets/hero-banner.svg" alt="ESP32 Expressive Robot Arm with AI" width="800"/>
+  <img src="assets/hero-banner.png" alt="ESP32 Expressive Robot Arm with AI" width="800"/>
 </p>
 
 ---
@@ -81,10 +81,6 @@ Gesture: wave_friendly (Friendly wave to greet someone)
 - 2x 18650 batteries OR 5V power supply
 - Computer with Python 3.8+
 - [Gemini API key](https://aistudio.google.com/app/apikey) (free)
-
-<p align="center">
-  <img src="assets/hardware-diagram.png" alt="Hardware setup and wiring diagram" width="600"/>
-</p>
 
 ---
 
@@ -179,10 +175,6 @@ python expressive/gemini_expressive.py "Do a victory dance"
 | Gesture | Description |
 |---------|-------------|
 | `dance_groove` | Fun dancing motion |
-
-<p align="center">
-  <img src="assets/gesture-showcase.png" alt="All available gestures demonstrated" width="800"/>
-</p>
 
 ---
 
